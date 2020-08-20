@@ -1,11 +1,17 @@
-﻿﻿@using EPiServer.Framework.Web.Resources
+﻿@using Mediachase.Commerce﻿
+@using EPiServer.Framework.Web.Resources
 @using Foundation.Features.CatalogContent.Package
+@using Foundation.Features.CatalogContent.Services
 
 @model GenericPackageViewModel
 
 @{
     var shareTitle = Uri.EscapeUriString("Check out this product: " + Model.CurrentContent.DisplayName);
     var shareUrl = Url.Encode(Request.Url.ToString());
+
+    var currentMarket = EPiServer.ServiceLocation.ServiceLocator.Current.GetInstance<Mediachase.Commerce.ICurrentMarket>();
+    var market = currentMarket.GetCurrentMarket();
+    var priceClass = ((bool)(ViewData["IsBundle"] == null ? false : ViewData["IsBundle"])) ? "price__discount" : "price__old";
 
     ClientResources.RequireScript("/Assets/js/vendors/dual-listbox.min.js").AtHeader();
     ClientResources.RequireStyle("/Assets/scss/vendors/dual-listbox.css").AtHeader();
@@ -21,7 +27,6 @@
             <div class="product-detail__title">
                 @Html.Partial("_BreadCrumb", Model.BreadCrumb)
                 <h5>@Html.PropertyFor(x => x.CurrentContent.DisplayName)</h5>
-                @*<h6 class="light-text">@Html.PropertyFor(x => x.Package.Brand)</h6>*@
                 <p class="sub-title">@Model.CurrentContent.Code</p>
             </div>
             <hr />
@@ -29,7 +34,6 @@
             <hr />
             <div class="row">
                 <div class="col-12">
-                    <select class="demo" id="select" multiple> </select>
                     @if (Model.IsAvailable)
                     {
                         if (Model.DiscountedPrice < Model.ListingPrice)
@@ -86,9 +90,31 @@
 
             @if (Model.Entries != null && Model.Entries.Count() > 0)
             {
-                @Html.Partial("_ListVariants", Model.Entries)
+                <div class="row">
+                    <div class="col-12 variant__group">
+                        <div class="row">
+                            @foreach (var variant in Model.Entries as IEnumerable<EntryContentBase>)
+                            {
+                                var price = PriceCalculationService.GetSalePrice(variant.Code, market.MarketId, market.DefaultCurrency);
+                                var image = variant.GetDefaultAsset<IContentMedia>();
+
+                                <div style="position: relative" class="col-2 variant__item">
+                                    <span id="stamp-@variant.Code" style="position: absolute; top: 30%; left: 20%; font-size: 1.2rem; color: red; border: 1px solid red; display: none">SELECTED</span>
+                                    <p style="font-weight:700;">@variant.Code</p>
+                                    <picture class="img-fluid variant__image">
+                                        <source data-srcset="@image?format=webp" type="image/webp">
+                                        <img data-src="@image" class="img-fluid variant__image lazyload" alt="Alternate Text" />
+                                    </picture>
+                                    <p class="title">@variant.DisplayName</p>
+                                    <p class="@priceClass">@(price != null ? price.UnitPrice.ToString() : (new Money(0, market.DefaultCurrency)).ToString())</p>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+                <select class="demo" id="select" multiple> </select>
                 @Html.Partial("_Store", Model.Stores)
-                @Html.Partial("_BuyNow", new Tuple<string, int, bool>(Model.CurrentContent.Code, Model.MinQuantity, Model.IsAvailable))
+                @Html.Partial("_BuyPackage", new Tuple<string, int, bool>(Model.CurrentContent.Code, Model.MinQuantity, Model.IsAvailable))
             }
             <hr />
             <div class="row">
@@ -122,35 +148,42 @@
 </div>
 
 <script>
-      let dualListbox = new DualListbox("#select", {
-        addEvent: function (value) {
-          // Should use the event listeners
-          console.log(value);
-        },
-        removeEvent: function (value) {
-          // Should use the event listeners
-          console.log(value);
-        },
-        availableTitle: "Different title",
-        selectedTitle: "Different title",
+    let variants = [
+        @foreach (var item in Model.Entries as IEnumerable<EntryContentBase>)
+        {
+            @Html.Raw("{ text: '" + item.Code + "', value: '" + item.Code + "'}, ");
+        }
+    ];
+    let dualListbox = new DualListbox("#select", {
+        availableTitle: "All variants",
+        selectedTitle: "Selected variants",
         addButtonText: ">",
         removeButtonText: "<",
         addAllButtonText: ">>",
         removeAllButtonText: "<<",
 
-        options: [
-          { text: "Option 1", value: "OPTION1" },
-          { text: "Option 2", value: "OPTION2" },
-          { text: "Selected option", value: "OPTION3", selected: true },
-        ],
-      });
+        options: variants,
+    });
 
-      dualListbox.addEventListener("added", function (event) {
-        console.log(event);
-        console.log(event.addedElement);
-      });
-      dualListbox.addEventListener("removed", function (event) {
-        console.log(event);
-        console.log(event.removedElement);
-      });
+    let selectedVariants = [];
+
+    dualListbox.addEventListener("added", function (event) {
+        selectedVariants.push(event.addedElement.dataset.id);
+        const stamp = document.querySelector(`#stamp-${event.addedElement.dataset.id}`);
+        stamp.style.display = '';
+        console.log("SELECTED", selectedVariants);
+    });
+    dualListbox.addEventListener("removed", function (event) {
+        const index = selectedVariants.indexOf(event.removedElement.dataset.id);
+        selectedVariants.splice(index, 1);
+        const stamp = document.querySelector(`#stamp-${event.removedElement.dataset.id}`);
+        stamp.style.display = 'none';
+        console.log("SELECTED", selectedVariants);
+    });
+
+    let addToCartButton = document.querySelector(".jsAddCustomPackageToCart");
+    addToCartButton.addEventListener("click", () => {
+        let varidantsCode = selectedVariants;
+
+    })
 </script>

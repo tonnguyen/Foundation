@@ -13,7 +13,10 @@
     var market = currentMarket.GetCurrentMarket();
     var priceClass = ((bool)(ViewData["IsBundle"] == null ? false : ViewData["IsBundle"])) ? "price__discount" : "price__old";
 
+    ClientResources.RequireScript("/Assets/js/vendors/jquery-3.5.1.js").AtHeader();
+    ClientResources.RequireScript("/Assets/js/vendors/axios.min.js").AtHeader();
     ClientResources.RequireScript("/Assets/js/vendors/dual-listbox.min.js").AtHeader();
+    ClientResources.RequireStyleInline(".dual-listbox .dual-listbox__item.dual-listbox__item--selected { background-color: black; color: white; }");
     ClientResources.RequireStyle("/Assets/scss/vendors/dual-listbox.css").AtHeader();
 }
 
@@ -98,8 +101,8 @@
                                 var price = PriceCalculationService.GetSalePrice(variant.Code, market.MarketId, market.DefaultCurrency);
                                 var image = variant.GetDefaultAsset<IContentMedia>();
 
-                                <div style="position: relative" class="col-2 variant__item">
-                                    <span id="stamp-@variant.Code" style="position: absolute; top: 30%; left: 20%; font-size: 1.2rem; color: red; border: 1px solid red; display: none">SELECTED</span>
+                                <div style="position: relative" class="variant__item">
+                                    <span id="stamp-@variant.Code" style="position: absolute; top: 30%; left: 12.5%; font-size: 1.2rem; color: red; border: 1px solid red; display: none">SELECTED</span>
                                     <p style="font-weight:700;">@variant.Code</p>
                                     <picture class="img-fluid variant__image">
                                         <source data-srcset="@image?format=webp" type="image/webp">
@@ -182,8 +185,58 @@
     });
 
     let addToCartButton = document.querySelector(".jsAddCustomPackageToCart");
-    addToCartButton.addEventListener("click", () => {
-        let varidantsCode = selectedVariants;
+    let packageQuantity = document.querySelector('#package-quantity');
 
+    addToCartButton.addEventListener("click", () => {
+        let data = {
+            PackageCode: "@Model.Package.Code",
+            SelectedVariants: selectedVariants,
+            RemovedVariants: variants.filter(item => !selectedVariants.includes(item.value)).map(item => item.value),
+            Quantity: packageQuantity.value,
+            Store: "delivery",
+            SelectedStore: "",
+            requestFrom: "axios",
+        }
+
+        axios.post("/DefaultCart/AddToCartPackage", data)
+            .then(function (result) {
+                if (result.data.StatusCode == 0) {
+                    notification.warning(result.data.Message);
+                }
+                if (result.data.StatusCode == 1) {
+                    let checkoutLink = "";
+                    let cartLink = "";
+                    if ($('#checkoutBtnId')) {
+                        checkoutLink = $('#checkoutBtnId').attr('href');
+                    }
+
+                    if ($('#cartBtnId')) {
+                        cartLink = $('#cartBtnId').attr('href');
+                    }
+
+                    let message = result.data.Message;
+                        let bottomNotification = `\n<div style='display: flex; justify-content: space-between; margin-top: 15px;'>
+                            <a href='`+ cartLink + `' class='btn-notification'>View Cart</a>
+                            <a href='`+ checkoutLink + `' class='btn-notification'>Checkout</a>
+                        </div>`;
+                        message += bottomNotification;
+
+                    notification.success(message, false);
+
+                    if (result.data.CountItems != undefined) {
+                        $('.jsCartBtn').each(function (i, e) {
+                            $(e).find('.icon-menu__badge').first().html(result.data.CountItems);
+                            $(e).attr('reload', 1);
+                        });
+                    };
+                }
+            })
+            .catch(function (error) {
+                notification.error("Can not add the product to the cart.\n");
+            })
+            .finally(function () {
+            });
+
+        return false;
     })
 </script>

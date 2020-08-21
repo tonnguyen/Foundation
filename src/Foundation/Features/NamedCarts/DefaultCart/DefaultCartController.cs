@@ -1,5 +1,6 @@
 ﻿using EPiServer;
 using EPiServer.Commerce.Catalog.ContentTypes;
+using EPiServer.Commerce.Catalog.Linking;
 using EPiServer.Commerce.Order;
 using EPiServer.Core;
 using EPiServer.Globalization;
@@ -56,6 +57,7 @@ namespace Foundation.Features.NamedCarts.DefaultCart
         private readonly IProductService _productService;
         private readonly LanguageResolver _languageResolver;
         private readonly ISettingsService _settingsService;
+        private readonly IRelationRepository _relationRepository;
 
         private const string b2cMinicart = "~/Features/Shared/Foundation/Header/_HeaderCart.cshtml";
 
@@ -75,7 +77,8 @@ namespace Foundation.Features.NamedCarts.DefaultCart
             CartItemViewModelFactory cartItemViewModelFactory,
             IProductService productService,
             LanguageResolver languageResolver,
-            ISettingsService settingsService)
+            ISettingsService settingsService,
+            IRelationRepository relationRepository)
 
         {
             _cartService = cartService;
@@ -94,6 +97,7 @@ namespace Foundation.Features.NamedCarts.DefaultCart
             _productService = productService;
             _languageResolver = languageResolver;
             _settingsService = settingsService;
+            _relationRepository = relationRepository;
         }
 
         private CartWithValidationIssues CartWithValidationIssues => _cart ?? (_cart = _cartService.LoadCart(_cartService.DefaultCartName, true));
@@ -105,6 +109,8 @@ namespace Foundation.Features.NamedCarts.DefaultCart
         private CartWithValidationIssues SharedCart => _sharedcart ?? (_sharedcart = _cartService.LoadCart(_cartService.DefaultSharedCartName, OrganizationId, true));
 
         private string OrganizationId => _customerService.GetCurrentContact().FoundationOrganization?.OrganizationId.ToString();
+
+        private static List<PackageEntry> PackageEntriesToRemove = new List<PackageEntry>();
 
         [AcceptVerbs(HttpVerbs.Get | HttpVerbs.Post)]
         public ActionResult MiniCartDetails()
@@ -155,6 +161,96 @@ namespace Foundation.Features.NamedCarts.DefaultCart
             var trackingResponse = await _recommendationService.TrackCart(HttpContext, CartWithValidationIssues.Cart);
             //viewModel.Recommendations = trackingResponse.GetCartRecommendations(_referenceConverter);
             return View("LargeCart", viewModel);
+        }
+
+        public void UpdatePackage()
+        {
+            foreach (var item in PackageEntriesToRemove)
+            {
+                _relationRepository.RemoveRelation(item);
+            }
+        }
+
+        private void TemporarySetupUpdatePackage(RequestPackageParamsToCart param)
+        {
+            var packageReference = _referenceConverter.GetContentLink(param.PackageCode);
+            var package = _contentLoader.Get<PackageContent>(packageReference);
+
+            if (param.RemovedVariants != null)
+            {
+                foreach (var item in param.RemovedVariants)
+                {
+                    PackageEntriesToRemove.Add(new PackageEntry
+                    {
+                        Parent = packageReference,
+                        Child = _referenceConverter.GetContentLink(item)
+                    });
+                }
+            }
+        }
+
+        public async Task<ActionResult> AddToCartPackage(RequestPackageParamsToCart param)
+        {
+            TemporarySetupUpdatePackage(param);
+
+            var warningMessage = string.Empty;
+
+            ModelState.Clear();
+
+            if (CartWithValidationIssues.Cart == null)
+            {
+                _cart = new CartWithValidationIssues
+                {
+                    Cart = _cartService.LoadOrCreateCart(_cartService.DefaultCartName),
+                    ValidationIssues = new Dictionary<ILineItem, List<ValidationIssue>>()
+                };
+            }
+
+            var result = _cartService.AddToCart(CartWithValidationIssues.Cart, param.PackageCode, param.Quantity, param.Store, param.SelectedStore);
+
+            if (result.EntriesAddedToCart)
+            {
+                _orderRepository.Save(CartWithValidationIssues.Cart);
+                await _recommendationService.TrackCart(HttpContext, CartWithValidationIssues.Cart);
+                if (string.Equals(param.RequestFrom, "axios", StringComparison.OrdinalIgnoreCase))
+                {
+                    var product = "";
+                    var entryLink = _referenceConverter.GetContentLink(param.PackageCode);
+                    var entry = _contentLoader.Get<EntryContentBase>(entryLink);
+                    if (entry is BundleContent || entry is PackageContent)
+                    {
+                        product = entry.DisplayName;
+                    }
+                    else
+                    {
+                        var parentProduct = _contentLoader.Get<EntryContentBase>(entry.GetParentProducts().FirstOrDefault());
+                        product = parentProduct?.DisplayName;
+                    }
+
+                    if (result.ValidationMessages.Count > 0)
+                    {
+                        return Json(new ChangeCartJsonResult
+                        {
+                            StatusCode = result.EntriesAddedToCart ? 1 : 0,
+                            CountItems = (int)CartWithValidationIssues.Cart.GetAllLineItems().Sum(x => x.Quantity),
+                            Message = product + " is added to the cart successfully.\n" + result.GetComposedValidationMessage(),
+                            SubTotal = CartWithValidationIssues.Cart.GetSubTotal()
+                        });
+                    }
+
+                    return Json(new ChangeCartJsonResult
+                    {
+                        StatusCode = result.EntriesAddedToCart ? 1 : 0,
+                        CountItems = (int)CartWithValidationIssues.Cart.GetAllLineItems().Sum(x => x.Quantity),
+                        Message = product + " is added to the cart successfully.",
+                        SubTotal = CartWithValidationIssues.Cart.GetSubTotal()
+                    });
+                }
+
+                return MiniCartDetails();
+            }
+
+            return new HttpStatusCodeResult(500, result.GetComposedValidationMessage());
         }
 
         [HttpPost]

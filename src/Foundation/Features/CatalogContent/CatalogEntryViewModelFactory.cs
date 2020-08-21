@@ -313,18 +313,18 @@ namespace Foundation.Features.CatalogContent
             var viewModel = new TViewModel();
             var variants = GetVariants<TVariant, TPackage>(currentContent).Where(x => x.Prices().Where(p => p.UnitPrice > 0).Any()).ToList();
             
-            var allVariants = new List<TVariant>();
-            foreach (var variant in variants)
-            {
-                var productContentReference = variant.GetParentProducts().FirstOrDefault();
-                var parentProduct = _contentLoader.Get<GenericProduct>(productContentReference);
-                var parentProductVariants = _contentLoader
-                    .GetItems(parentProduct.GetVariants(_relationRepository), _languageResolver.GetPreferredCulture())
-                    .OfType<TVariant>()
-                    .Where(v => v.IsAvailableInCurrentMarket(_currentMarket) && !_filterPublished.ShouldFilter(v))
-                    .ToList();
-                allVariants = allVariants.Union(parentProductVariants).ToList();
-            }
+            //var allVariants = new List<TVariant>();
+            //foreach (var variant in variants)
+            //{
+            //    var productContentReference = variant.GetParentProducts().FirstOrDefault();
+            //    var parentProduct = _contentLoader.Get<GenericProduct>(productContentReference);
+            //    var parentProductVariants = _contentLoader
+            //        .GetItems(parentProduct.GetVariants(_relationRepository), _languageResolver.GetPreferredCulture())
+            //        .OfType<TVariant>()
+            //        .Where(v => v.IsAvailableInCurrentMarket(_currentMarket) && !_filterPublished.ShouldFilter(v))
+            //        .ToList();
+            //    allVariants = allVariants.Union(parentProductVariants).ToList();
+            //}
 
             var entries = GetEntriesRelation(currentContent);
             var market = _currentMarket.GetCurrentMarket();
@@ -352,7 +352,8 @@ namespace Foundation.Features.CatalogContent
             viewModel.Images = currentContent.GetAssets<IContentImage>(_contentLoader, _urlResolver);
             viewModel.Media = currentContent.GetAssetsWithType(_contentLoader, _urlResolver);
             viewModel.IsAvailable = _databaseMode.DatabaseMode != DatabaseMode.ReadOnly && defaultPrice != null && isInstock;
-            viewModel.Entries = allVariants;
+            //viewModel.Entries = allVariants;
+            viewModel.Entries = variants;
             viewModel.EntriesRelation = entries;
             //Reviews = GetReviews(currentContent.Code);
             viewModel.Stores = new StoreViewModel

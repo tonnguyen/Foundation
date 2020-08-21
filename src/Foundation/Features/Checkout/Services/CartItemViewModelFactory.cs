@@ -1,3 +1,4 @@
+using Castle.Facilities.TypedFactory.Internal;
 using EPiServer;
 using EPiServer.Commerce.Catalog.ContentTypes;
 using EPiServer.Commerce.Catalog.Linking;
@@ -14,6 +15,7 @@ using Mediachase.Commerce;
 using Mediachase.Commerce.Catalog;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 
 namespace Foundation.Features.Checkout.Services
 {
@@ -54,12 +56,30 @@ namespace Foundation.Features.Checkout.Services
             _cartService = cartService;
         }
 
-        public virtual CartItemViewModel CreateCartItemViewModel(ICart cart, ILineItem lineItem, EntryContentBase entry)
+        public virtual CartItemViewModel CreateCartItemViewModel(ICart cart, ILineItem lineItem, EntryContentBase entry, IEnumerable<string> variationNames = null)
         {
+            StringBuilder displayName = new StringBuilder(entry.DisplayName);
+            if (variationNames != null)
+            {
+                displayName.Append(" (");
+                foreach (var item in variationNames)
+                {
+                    displayName.Append($" {item}");
+                    if (item.Equals(variationNames.Last()))
+                    {
+                        displayName.Append(")");
+                    }
+                    else
+                    {
+                        displayName.Append(",");
+                    }
+                }
+            }
+
             var viewModel = new CartItemViewModel
             {
                 Code = lineItem.Code,
-                DisplayName = entry.DisplayName,
+                DisplayName = displayName.ToString(),
                 ImageUrl = entry.GetAssets<IContentImage>(_contentLoader, _urlResolver).FirstOrDefault() ?? "",
                 DiscountedPrice = GetDiscountedPrice(cart, lineItem),
                 PlacedPrice = new Money(lineItem.PlacedPrice, _currencyService.GetCurrentCurrency()),

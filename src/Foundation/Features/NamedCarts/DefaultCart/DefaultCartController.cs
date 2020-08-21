@@ -3,6 +3,7 @@ using EPiServer.Commerce.Catalog.ContentTypes;
 using EPiServer.Commerce.Catalog.Linking;
 using EPiServer.Commerce.Order;
 using EPiServer.Core;
+using EPiServer.Filters;
 using EPiServer.Globalization;
 using EPiServer.Security;
 using EPiServer.Web.Mvc;
@@ -22,6 +23,7 @@ using Foundation.Features.MyAccount.OrderConfirmation;
 using Foundation.Features.Settings;
 using Foundation.Infrastructure;
 using Foundation.Personalization;
+using Mediachase.Commerce;
 using Mediachase.Commerce.Catalog;
 using Mediachase.Commerce.Orders;
 using Mediachase.Commerce.Security;
@@ -58,6 +60,8 @@ namespace Foundation.Features.NamedCarts.DefaultCart
         private readonly LanguageResolver _languageResolver;
         private readonly ISettingsService _settingsService;
         private readonly IRelationRepository _relationRepository;
+        private readonly FilterPublished _filterPublished;
+        private readonly ICurrentMarket _currentMarket;
 
         private const string b2cMinicart = "~/Features/Shared/Foundation/Header/_HeaderCart.cshtml";
 
@@ -78,7 +82,9 @@ namespace Foundation.Features.NamedCarts.DefaultCart
             IProductService productService,
             LanguageResolver languageResolver,
             ISettingsService settingsService,
-            IRelationRepository relationRepository)
+            IRelationRepository relationRepository,
+            FilterPublished filterPublished,
+            ICurrentMarket currentMarket)
 
         {
             _cartService = cartService;
@@ -98,6 +104,8 @@ namespace Foundation.Features.NamedCarts.DefaultCart
             _languageResolver = languageResolver;
             _settingsService = settingsService;
             _relationRepository = relationRepository;
+            _filterPublished = filterPublished;
+            _currentMarket = currentMarket;
         }
 
         private CartWithValidationIssues CartWithValidationIssues => _cart ?? (_cart = _cartService.LoadCart(_cartService.DefaultCartName, true));
@@ -109,8 +117,6 @@ namespace Foundation.Features.NamedCarts.DefaultCart
         private CartWithValidationIssues SharedCart => _sharedcart ?? (_sharedcart = _cartService.LoadCart(_cartService.DefaultSharedCartName, OrganizationId, true));
 
         private string OrganizationId => _customerService.GetCurrentContact().FoundationOrganization?.OrganizationId.ToString();
-
-        private static List<PackageEntry> PackageEntriesToRemove = new List<PackageEntry>();
 
         [AcceptVerbs(HttpVerbs.Get | HttpVerbs.Post)]
         public ActionResult MiniCartDetails()
@@ -163,24 +169,16 @@ namespace Foundation.Features.NamedCarts.DefaultCart
             return View("LargeCart", viewModel);
         }
 
-        public void UpdatePackage()
-        {
-            foreach (var item in PackageEntriesToRemove)
-            {
-                _relationRepository.RemoveRelation(item);
-            }
-        }
-
-        private void TemporarySetupUpdatePackage(RequestPackageParamsToCart param)
+        private void UpdatePackage(RequestPackageParamsToCart param)
         {
             var packageReference = _referenceConverter.GetContentLink(param.PackageCode);
-            var package = _contentLoader.Get<PackageContent>(packageReference);
+            //var package = _contentLoader.Get<PackageContent>(packageReference);
 
             if (param.RemovedVariants != null)
             {
                 foreach (var item in param.RemovedVariants)
                 {
-                    PackageEntriesToRemove.Add(new PackageEntry
+                    _relationRepository.RemoveRelation(new PackageEntry
                     {
                         Parent = packageReference,
                         Child = _referenceConverter.GetContentLink(item)
@@ -191,7 +189,7 @@ namespace Foundation.Features.NamedCarts.DefaultCart
 
         public async Task<ActionResult> AddToCartPackage(RequestPackageParamsToCart param)
         {
-            TemporarySetupUpdatePackage(param);
+            UpdatePackage(param);
 
             var warningMessage = string.Empty;
 
@@ -693,6 +691,8 @@ namespace Foundation.Features.NamedCarts.DefaultCart
             //model.Recommendations = trackingResponse.GetCartRecommendations(_referenceConverter);
             var viewModel = _cartViewModelFactory.CreateLargeCartViewModel(CartWithValidationIssues.Cart, null);
 
+
+
             if (param.RequestFrom == "changeSizeItem")
             {
                 var preferredCulture = _languageResolver.GetPreferredCulture();
@@ -702,7 +702,19 @@ namespace Foundation.Features.NamedCarts.DefaultCart
                 var entries = _contentLoader.GetItems(shipment.LineItems.Select(x => _referenceConverter.GetContentLink(x.Code)),
                     preferredCulture).OfType<EntryContentBase>();
                 var entry = entries.FirstOrDefault(x => x.Code == lineItem.Code);
-                var newItemViewModel = _cartItemViewModelFactory.CreateCartItemViewModel(CartWithValidationIssues.Cart, lineItem, entry);
+
+                var variantNames = new List<string>();
+                if (entry is PackageContent content)
+                {
+                    variantNames = _contentLoader
+                      .GetItems(content.GetEntries(_relationRepository), _languageResolver.GetPreferredCulture())
+                      .OfType<VariationContent>()
+                      .Where(v => v.IsAvailableInCurrentMarket(_currentMarket) && !_filterPublished.ShouldFilter(v))
+                      .Select(v => v.DisplayName)
+                      .ToList();
+                }
+
+                var newItemViewModel = _cartItemViewModelFactory.CreateCartItemViewModel(CartWithValidationIssues.Cart, lineItem, entry, variantNames);
                 ViewData["ShipmentId"] = param.ShipmentId;
                 return PartialView("_ItemTemplate", newItemViewModel);
             }

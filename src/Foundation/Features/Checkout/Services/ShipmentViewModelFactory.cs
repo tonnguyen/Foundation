@@ -1,6 +1,8 @@
 using EPiServer;
 using EPiServer.Commerce.Catalog.ContentTypes;
+using EPiServer.Commerce.Catalog.Linking;
 using EPiServer.Commerce.Order;
+using EPiServer.Filters;
 using EPiServer.Globalization;
 using Foundation.Commerce.Markets;
 using Foundation.Features.Checkout.ViewModels;
@@ -27,6 +29,9 @@ namespace Foundation.Features.Checkout.Services
         private readonly LanguageResolver _languageResolver;
         private readonly IMarketService _marketService;
         private ShippingMethodInfoModel _instorePickup;
+        private readonly IRelationRepository _relationRepository;
+        private readonly FilterPublished _filterPublished;
+        private readonly ICurrentMarket _currentMarket;
 
         public ShipmentViewModelFactory(
             IContentLoader contentLoader,
@@ -36,7 +41,10 @@ namespace Foundation.Features.Checkout.Services
             IAddressBookService addressBookService,
             CartItemViewModelFactory cartItemViewModelFactory,
             LanguageResolver languageResolver,
-            IMarketService marketService)
+            IMarketService marketService,
+            IRelationRepository relationRepository,
+            FilterPublished filterPublished,
+            ICurrentMarket currentMarket)
         {
             _contentLoader = contentLoader;
             _shippingService = shippingService;
@@ -46,6 +54,9 @@ namespace Foundation.Features.Checkout.Services
             _cartItemViewModelFactory = cartItemViewModelFactory;
             _languageResolver = languageResolver;
             _marketService = marketService;
+            _relationRepository = relationRepository;
+            _filterPublished = filterPublished;
+            _currentMarket = currentMarket;
         }
 
         public virtual ShippingMethodInfoModel InStorePickupInfoModel => _instorePickup ?? (_instorePickup = _shippingService.GetInstorePickupModel());
@@ -90,7 +101,18 @@ namespace Foundation.Features.Checkout.Services
                         continue;
                     }
 
-                    shipmentModel.CartItems.Add(_cartItemViewModelFactory.CreateCartItemViewModel(cart, lineItem, entry));
+                    var variantNames = new List<string>();
+                    if (entry is PackageContent content)
+                    {
+                        variantNames = _contentLoader
+                          .GetItems(content.GetEntries(_relationRepository), _languageResolver.GetPreferredCulture())
+                          .OfType<VariationContent>()
+                          .Where(v => v.IsAvailableInCurrentMarket(_currentMarket) && !_filterPublished.ShouldFilter(v))
+                          .Select(v => v.DisplayName)
+                          .ToList();
+                    }
+
+                    shipmentModel.CartItems.Add(_cartItemViewModelFactory.CreateCartItemViewModel(cart, lineItem, entry, variantNames));
                 }
 
                 yield return shipmentModel;

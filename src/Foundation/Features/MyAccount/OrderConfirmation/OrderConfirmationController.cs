@@ -1,12 +1,17 @@
-﻿using EPiServer.Commerce.Order;
+﻿using EPiServer;
+using EPiServer.Commerce.Catalog.Linking;
+using EPiServer.Commerce.Order;
 using EPiServer.Core;
 using EPiServer.Editor;
+using EPiServer.Filters;
+using EPiServer.Globalization;
 using EPiServer.Web.Mvc.Html;
 using EPiServer.Web.Routing;
 using Foundation.Commerce.Customer.Services;
 using Foundation.Features.Checkout.Services;
 using Foundation.Features.MyAccount.AddressBook;
 using Foundation.Infrastructure.Services;
+using Mediachase.Commerce;
 using System.Web.Mvc;
 
 namespace Foundation.Features.MyAccount.OrderConfirmation
@@ -19,8 +24,13 @@ namespace Foundation.Features.MyAccount.OrderConfirmation
             ConfirmationService confirmationService,
             IAddressBookService addressBookService,
             IOrderGroupCalculator orderGroupCalculator,
-            UrlResolver urlResolver, ICustomerService customerService) :
-            base(confirmationService, addressBookService, orderGroupCalculator, urlResolver, customerService)
+            UrlResolver urlResolver, ICustomerService customerService,
+            IContentLoader contentLoader,
+            FilterPublished filterPublished,
+            ICurrentMarket currentMarket,
+            LanguageResolver languageResolver,
+            IRelationRepository relationRepository) :
+            base(confirmationService, addressBookService, orderGroupCalculator, urlResolver, customerService, contentLoader, filterPublished, currentMarket, languageResolver, relationRepository)
         {
             _campaignService = campaignService;
         }

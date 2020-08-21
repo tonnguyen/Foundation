@@ -64,14 +64,14 @@ namespace Foundation.Features.Checkout.Services
                 displayName.Append(" (");
                 foreach (var item in variationNames)
                 {
-                    displayName.Append($" {item}");
+                    displayName.Append($"{item}");
                     if (item.Equals(variationNames.Last()))
                     {
                         displayName.Append(")");
                     }
                     else
                     {
-                        displayName.Append(",");
+                        displayName.Append(", ");
                     }
                 }
             }

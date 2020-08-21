@@ -13,6 +13,8 @@ namespace Foundation.Features.Checkout.ViewModels
         {
         }
 
+        public List<string> DisplayPackageNames { get; set; }
+
         public bool HasOrder { get; set; }
         public string OrderId { get; set; }
         public IEnumerable<ILineItem> Items { get; set; }

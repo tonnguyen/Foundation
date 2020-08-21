@@ -1,6 +1,9 @@
 ﻿using EPiServer;
+using EPiServer.Commerce.Catalog.Linking;
 using EPiServer.Commerce.Order;
 using EPiServer.Core;
+using EPiServer.Filters;
+using EPiServer.Globalization;
 using EPiServer.Security;
 using EPiServer.Web.Mvc.Html;
 using EPiServer.Web.Routing;
@@ -12,6 +15,7 @@ using Foundation.Features.Checkout.ViewModels;
 using Foundation.Features.MyAccount.AddressBook;
 using Foundation.Features.MyAccount.OrderConfirmation;
 using Foundation.Features.Settings;
+using Mediachase.Commerce;
 using Mediachase.Commerce.Orders;
 using Mediachase.Commerce.Orders.Managers;
 using Mediachase.Commerce.Security;
@@ -28,13 +32,11 @@ namespace Foundation.Features.MyAccount.OrderHistory
     {
         private readonly IAddressBookService _addressBookService;
         private readonly IOrderRepository _orderRepository;
-        private readonly IContentLoader _contentLoader;
         private readonly ICartService _cartService;
         private readonly IOrderGroupFactory _orderGroupFactory;
         private readonly PaymentMethodViewModelFactory _paymentMethodViewModelFactory;
         private readonly CookieService _cookieService;
         private readonly ISettingsService _settingsService;
-
         private const string _KEYWORD = "OrderHistoryPage:Keyword";
         private const string _DATEFROM = "OrderHistoryPage:DateFrom";
         private const string _DATETO = "OrderHistoryPage:DateTo";
@@ -54,12 +56,15 @@ namespace Foundation.Features.MyAccount.OrderHistory
             UrlResolver urlResolver, IOrderGroupFactory orderGroupFactory, ICustomerService customerService,
             PaymentMethodViewModelFactory paymentMethodViewModelFactory,
             CookieService cookieService,
-            ISettingsService settingsService) :
-            base(confirmationService, addressBookService, orderGroupCalculator, urlResolver, customerService)
+            ISettingsService settingsService,
+            ICurrentMarket currentMarket,
+            LanguageResolver languageResolver,
+            IRelationRepository relationRepository,
+            FilterPublished filterPublished) :
+            base(confirmationService, addressBookService, orderGroupCalculator, urlResolver, customerService, contentLoader, filterPublished, currentMarket, languageResolver, relationRepository)
         {
             _addressBookService = addressBookService;
             _orderRepository = orderRepository;
-            _contentLoader = contentLoader;
             _cartService = cartService;
             _orderGroupFactory = orderGroupFactory;
             _paymentMethodViewModelFactory = paymentMethodViewModelFactory;

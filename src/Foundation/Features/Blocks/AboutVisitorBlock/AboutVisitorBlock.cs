@@ -22,24 +22,26 @@ namespace Foundation.Features.Blocks.AboutVisitorBlock
         [Display(Name = "Heading text", Order = 10, GroupName = SystemTabNames.Content)]
         public virtual string HeadingText { get; set; }
 
-        [Display(Name = "Enable", Order = 10, GroupName = AboutVisitorBlockTabNames.VisitorGroups)]
+        [Display(Name = "Show", Order = 10, GroupName = AboutVisitorBlockTabNames.VisitorGroups)]
         public virtual bool ShowVisitorGroupSection { get; set; }
         [Display(Name = "Label", Order = 20, GroupName = AboutVisitorBlockTabNames.VisitorGroups)]
         public virtual string VisitorGroupSectionHeadingText { get; set; }
         [Display(Name = "Number of groups to show", Order = 30, GroupName = AboutVisitorBlockTabNames.VisitorGroups)]
         public virtual int MaxVisitorsToShow { get; set; }
 
-        [Display(Name = "Enable", Order = 10, GroupName = AboutVisitorBlockTabNames.RecentActivity)]
+        [Display(Name = "Show", Order = 10, GroupName = AboutVisitorBlockTabNames.RecentActivity)]
         public virtual bool ShowRecentActivitySection { get; set; }
         [Display(Name = "Label", Order = 20, GroupName = AboutVisitorBlockTabNames.RecentActivity)]
         public virtual string RecentActivitySectionHeadingText { get; set; }
-        [Display(Name = "Number of events to show", Order = 30, GroupName = AboutVisitorBlockTabNames.RecentActivity)]
+        [Display(Name = "Number of activities to show", Order = 30, GroupName = AboutVisitorBlockTabNames.RecentActivity)]
         public virtual int MaxEventsToShow { get; set; }
 
-        [Display(Name = "Enable", Order = 10, GroupName = AboutVisitorBlockTabNames.KeyTopics)]
+        [Display(Name = "Show", Order = 10, GroupName = AboutVisitorBlockTabNames.KeyTopics)]
         public virtual bool ShowKeyTopicsSection { get; set; }
         [Display(Name = "Label", Order = 20, GroupName = AboutVisitorBlockTabNames.KeyTopics)]
         public virtual string KeyTopicsSectionHeadingText { get; set; }
+        [Display(Name = "Number of topics to show", Order = 30, GroupName = AboutVisitorBlockTabNames.KeyTopics)]
+        public virtual int MaxTopicsToShow { get; set; }
 
         [Display(Name = "Width (px)", Order = 80, GroupName = TabNames.BlockStyling)]
         public virtual int Width { get; set; }
@@ -51,10 +53,14 @@ namespace Foundation.Features.Blocks.AboutVisitorBlock
             VisitorGroupSectionHeadingText = "Visitor Groups";
             RecentActivitySectionHeadingText = "Recent Activity";
             KeyTopicsSectionHeadingText = "Key Topics";
+
+            BackgroundColor = "white";
             Width = 400;
+            Padding = "p-3";
 
             MaxVisitorsToShow = 10;
             MaxEventsToShow = 10;
+            MaxTopicsToShow = 5;
         }
     }
 }

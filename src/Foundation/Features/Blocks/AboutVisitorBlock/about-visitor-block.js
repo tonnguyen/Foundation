@@ -8,7 +8,7 @@ export default class AboutVisitorBlock {
 
     init() {
         var self = this;
-        this.contentWidth = $('.about-visitor-content').data('width');
+        this.contentWidth = $('.about-visitor-content').outerWidth(true);
         if (this.contentWidth)
             this.hideContent();
 

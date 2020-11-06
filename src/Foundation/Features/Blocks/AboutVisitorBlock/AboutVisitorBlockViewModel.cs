@@ -39,6 +39,7 @@ namespace Foundation.Features.Blocks.AboutVisitorBlock
         //section data
         public List<string> VisitorGroups { get; set; }
         public IEnumerable<TrackedEventViewModel> Events { get; set; }
+        public IEnumerable<TopicViewModel> Topics { get; set; }
 
         //styles
         public int Width { get; set; }

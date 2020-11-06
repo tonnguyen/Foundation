@@ -15,5 +15,6 @@ namespace Foundation.Features.Blocks.AboutVisitorBlock
         public string EventType { get; set; }
         public string EventTime { get; set; }
         public string Value { get; set; }
+        public string PageUri { get; set; }
     }
 }

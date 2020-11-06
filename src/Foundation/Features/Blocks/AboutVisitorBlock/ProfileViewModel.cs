@@ -20,8 +20,11 @@ namespace Foundation.Features.Blocks.AboutVisitorBlock
 
         public string GetAddress()
         {
-            if (string.IsNullOrEmpty(City) || string.IsNullOrEmpty(State)) return "N/A";
-            return string.Join(", ", City, State);
+            if (string.IsNullOrEmpty(City) && string.IsNullOrEmpty(State)) return "N/A";
+            var address = new List<string>();
+            if (!string.IsNullOrEmpty(City)) address.Add(City);
+            if (!string.IsNullOrEmpty(State)) address.Add(State);
+            return string.Join(", ", address);
         }
     }
 }

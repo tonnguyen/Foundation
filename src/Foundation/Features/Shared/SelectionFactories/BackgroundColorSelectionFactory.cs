@@ -24,6 +24,7 @@ namespace Foundation.Features.Shared.SelectionFactories
             return new ISelectItem[]
             {
                 new SelectItem { Text =  _localizationService.GetString("None", "None"), Value = "transparent" },
+                new SelectItem { Text =  _localizationService.GetString("White", "White"), Value = "white" },
                 new SelectItem { Text =  _localizationService.GetString("Black", "Black"), Value = "black" },
                 new SelectItem { Text =  _localizationService.GetString("Grey", "Grey"), Value = "grey" },
                 new SelectItem { Text =  _localizationService.GetString("Beige", "Beige"), Value = "beige" },

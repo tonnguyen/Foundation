@@ -9,7 +9,10 @@ using RestSharp;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
+using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using System.Web;
 using System.Web.Mvc;
 
@@ -26,6 +29,13 @@ namespace Foundation.Features.Blocks.AboutVisitorBlock
         private readonly string resourceGetProfiles = ConfigurationManager.AppSettings["ProfileStore.ResourceGetProfiles"];
         private readonly string resourceGetEvents = ConfigurationManager.AppSettings["ProfileStore.ResourceGetEvents"];
 
+        private readonly string idioApiRootUrl = ConfigurationManager.AppSettings["foundation:AboutVisitorBlock.IdioApiRootUrl"];
+        private readonly string resourceGetTopics = ConfigurationManager.AppSettings["foundation:AboutVisitorBlock.ResourceGetTopics"];
+        private readonly string idioAppKey = ConfigurationManager.AppSettings["foundation:AboutVisitorBlock.IdioApplicationKey"];
+        private readonly string idioAppSecretKey = ConfigurationManager.AppSettings["foundation:AboutVisitorBlock.IdioApplicationSecretKey"];
+        private readonly string idioDeliveryKey = ConfigurationManager.AppSettings["foundation:AboutVisitorBlock.IdioDeliveryKey"];
+        private readonly string idioDeliverySecretKey = ConfigurationManager.AppSettings["foundation:AboutVisitorBlock.IdioDeliverySecretKey"];
+
         public AboutVisitorBlockController(IVisitorGroupRepository visitorGroupRepository,
             IVisitorGroupRoleRepository visitorGroupRoleRepository,
             UIUserProvider userProvider)
@@ -41,6 +51,7 @@ namespace Foundation.Features.Blocks.AboutVisitorBlock
             var visitorGroups = new List<string>();
             var events = new List<TrackedEventViewModel>();
             var profile = new ProfileViewModel();
+            var topics = new List<TopicViewModel>();
 
             if (User.Identity.IsAuthenticated)
             {
@@ -50,12 +61,16 @@ namespace Foundation.Features.Blocks.AboutVisitorBlock
                     events = GetEventsByEmail(User.Identity.Name, currentBlock.MaxEventsToShow);
                 if (currentBlock.ShowVisitorGroupSection)
                     visitorGroups = GetVisitorGroups(currentBlock.MaxVisitorsToShow);
+                if (currentBlock.ShowKeyTopicsSection)
+                    topics = GetTopicsByProfileId("5ffca1ed-252e-4b44-9aac-7d04ea4a4558", currentBlock.MaxTopicsToShow);
             }
             else
             {
                 profile = GetProfileByDeviceId(deviceId);
                 if (currentBlock.ShowRecentActivitySection)
                     events = GetEventsByDeviceId(deviceId, currentBlock.MaxEventsToShow);
+                if (currentBlock.ShowKeyTopicsSection)
+                    topics = GetTopicsByProfileId("5ffca1ed-252e-4b44-9aac-7d04ea4a4558", currentBlock.MaxTopicsToShow);
             }
 
             var model = new AboutVisitorBlockViewModel(currentBlock)
@@ -66,7 +81,8 @@ namespace Foundation.Features.Blocks.AboutVisitorBlock
                 Location = profile.GetAddress(),
 
                 VisitorGroups = visitorGroups,
-                Events = events
+                Events = events,
+                Topics = topics
             };
             return PartialView("~/Features/Blocks/AboutVisitorBlock/AboutVisitorBlock.cshtml", model);
         }
@@ -164,7 +180,7 @@ namespace Foundation.Features.Blocks.AboutVisitorBlock
             request.AddParameter("$orderBy", "EventTime DESC");
             request.AddParameter("$top", limit);
 
-            // Execute the request to get the profile
+            // Execute the request
             var getEventResponse = client.Execute(request);
             var getEventContent = getEventResponse.Content;
 
@@ -176,7 +192,8 @@ namespace Foundation.Features.Blocks.AboutVisitorBlock
             {
                 EventTime = e["EventTime"]?.ToString(),
                 EventType = e["EventType"]?.ToString(),
-                Value = e["Value"]?.ToString()
+                Value = e["Value"]?.ToString(),
+                PageUri = e["PageUri"]?.ToString()
             }).ToList();
         }
         private List<TrackedEventViewModel> GetEventsByDeviceId(string deviceId, int limit)
@@ -191,7 +208,7 @@ namespace Foundation.Features.Blocks.AboutVisitorBlock
             request.AddParameter("$orderBy", "EventTime DESC");
             request.AddParameter("$top", limit);
 
-            // Execute the request to get the profile
+            // Execute the request
             var getEventResponse = client.Execute(request);
             var getEventContent = getEventResponse.Content;
 
@@ -203,8 +220,63 @@ namespace Foundation.Features.Blocks.AboutVisitorBlock
             {
                 EventTime = e["EventTime"]?.ToString(),
                 EventType = e["EventType"]?.ToString(),
-                Value = e["Value"]?.ToString()
+                Value = e["Value"]?.ToString(),
+                PageUri = e["PageUri"]?.ToString()
             }).ToList();
         }
+
+        public List<TopicViewModel> GetTopicsByProfileId(string profileId, int limit)
+        {
+            // Set up the request
+            var requestUri = string.Format(resourceGetTopics, profileId);
+            var client = new RestClient(idioApiRootUrl);
+            var request = new RestRequest(requestUri, Method.GET);
+
+            var signatureData = $"GET\n{requestUri}\n{DateTime.Now.ToString("yyy-MM-dd")}";
+
+            var appSignature = HMACSHA1Hash(signatureData, idioAppSecretKey);
+            var deliverySignature = HMACSHA1Hash(signatureData, idioDeliverySecretKey);
+            request.AddHeader("X-App-Authentication", $"{idioAppKey}:{appSignature}");
+            request.AddHeader("X-Delivery-Authentication", $"{idioDeliveryKey}:{deliverySignature}");
+
+            request.AddParameter("rpp", limit);
+
+            // Execute the request
+            var getTopicsResponse = client.Execute(request);
+            var getTopicsContent = getTopicsResponse.Content;
+
+            // Get the results as a JArray object
+            var topicResponseObject = JObject.Parse(getTopicsContent);
+            var topicArray = (JArray)topicResponseObject["topic"];
+
+            return topicArray.Select(e =>
+            {
+                var id = e["id"]?.ToString();
+                var name = e["title"]?.ToString();
+                double score = 0;
+                var scoreString = e["weight"]?.ToString();
+                if (!string.IsNullOrEmpty(scoreString))
+                {
+                    if (double.TryParse(scoreString, out double parsedScore))
+                        score = parsedScore;
+                }
+                return new TopicViewModel()
+                {
+                    Id = id,
+                    Name = name,
+                    Score = score
+                };
+            }).ToList();
+        }
+
+        #region helpers
+        private string HMACSHA1Hash(string input, string secretKey)
+        {
+            HMACSHA1 myhmacsha1 = new HMACSHA1(Encoding.ASCII.GetBytes(secretKey));
+            byte[] byteArray = Encoding.ASCII.GetBytes(input);
+            MemoryStream stream = new MemoryStream(byteArray);
+            return myhmacsha1.ComputeHash(stream).Aggregate("", (s, e) => s + String.Format("{0:x2}", e), s => s);
+        }
+        #endregion
     }
 }

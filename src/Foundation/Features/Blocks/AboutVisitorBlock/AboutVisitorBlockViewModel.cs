@@ -20,6 +20,8 @@ namespace Foundation.Features.Blocks.AboutVisitorBlock
             Width = currentBlock.Width;
 
             VisitorGroups = new List<string>();
+            Events = new List<TrackedEventViewModel>();
+            Topics = new List<TopicViewModel>();
         }
 
         public virtual string HeadingText { get; set; }

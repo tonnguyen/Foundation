@@ -57,21 +57,25 @@ namespace Foundation.Features.Blocks.AboutVisitorBlock
             {
                 var userInfo = _userProvider.GetUser(User.Identity.Name);
                 profile = GetProfileByEmail(userInfo.Email);
-                if (currentBlock.ShowRecentActivitySection)
-                    events = GetEventsByEmail(User.Identity.Name, currentBlock.MaxEventsToShow);
-                if (currentBlock.ShowVisitorGroupSection)
-                    visitorGroups = GetVisitorGroups(currentBlock.MaxVisitorsToShow);
-                if (currentBlock.ShowKeyTopicsSection)
-                    topics = GetTopicsByProfileId("5ffca1ed-252e-4b44-9aac-7d04ea4a4558", currentBlock.MaxTopicsToShow);
+                if (!string.IsNullOrEmpty(profile.Id))
+                {
+                    if (currentBlock.ShowRecentActivitySection)
+                        events = GetEventsByEmail(userInfo.Email, currentBlock.MaxEventsToShow);
+                    if (currentBlock.ShowVisitorGroupSection)
+                        visitorGroups = GetVisitorGroups(currentBlock.MaxVisitorsToShow);
+                }
             }
             else
             {
                 profile = GetProfileByDeviceId(deviceId);
-                if (currentBlock.ShowRecentActivitySection)
-                    events = GetEventsByDeviceId(deviceId, currentBlock.MaxEventsToShow);
-                if (currentBlock.ShowKeyTopicsSection)
-                    topics = GetTopicsByProfileId("5ffca1ed-252e-4b44-9aac-7d04ea4a4558", currentBlock.MaxTopicsToShow);
+                if (!string.IsNullOrEmpty(profile.Id))
+                {
+                    if (currentBlock.ShowRecentActivitySection)
+                        events = GetEventsByDeviceId(deviceId, currentBlock.MaxEventsToShow);
+                }
             }
+            if (currentBlock.ShowKeyTopicsSection)
+                topics = GetTopicsByProfileId(Request.Cookies["iv"]?.Value, currentBlock.MaxTopicsToShow);
 
             var model = new AboutVisitorBlockViewModel(currentBlock)
             {
@@ -104,169 +108,213 @@ namespace Foundation.Features.Blocks.AboutVisitorBlock
 
         private ProfileViewModel GetProfileByEmail(string email)
         {
-            // Set up the request
-            var client = new RestClient(apiRootUrl);
-            var request = new RestRequest(resourceGetProfiles, Method.GET);
-            request.AddHeader("Ocp-Apim-Subscription-Key", subscriptionKey);
-
-            // Filter the profiles based on the current device id
-            request.AddParameter("$filter", "Info.Email eq " + email);
-
-            // Execute the request to get the profile
-            var getProfileResponse = client.Execute(request);
-            var getProfileContent = getProfileResponse.Content;
-
-            // Get the results as a JArray object
-            var profileResponseObject = JObject.Parse(getProfileContent);
-            var profileArray = (JArray)profileResponseObject["items"];
-
-            // Expecting an array of profiles with one item in it
-            var profileObject = profileArray.First;
-            if (profileObject == null) return new ProfileViewModel();
-
-            var profileInfo = profileObject["Info"];
-            return new ProfileViewModel()
+            try
             {
-                Id = profileObject["ProfileId"]?.ToString(),
-                Name = profileObject["Name"]?.ToString(),
-                Email = profileInfo != null ? profileInfo["Email"]?.ToString() : "",
-                City = profileInfo != null ? profileInfo["City"]?.ToString() : "",
-                State = profileInfo != null ? profileInfo["State"]?.ToString() : "",
-            };
+                // Set up the request
+                var client = new RestClient(apiRootUrl);
+                var request = new RestRequest(resourceGetProfiles, Method.GET);
+                request.AddHeader("Ocp-Apim-Subscription-Key", subscriptionKey);
+
+                // Filter the profiles based on the current device id
+                request.AddParameter("$filter", "Info.Email eq " + email);
+
+                // Execute the request to get the profile
+                var getProfileResponse = client.Execute(request);
+                var getProfileContent = getProfileResponse.Content;
+
+                // Get the results as a JArray object
+                var profileResponseObject = JObject.Parse(getProfileContent);
+                var profileArray = (JArray)profileResponseObject["items"];
+
+                // Expecting an array of profiles with one item in it
+                var profileObject = profileArray.First;
+                if (profileObject == null) return new ProfileViewModel();
+
+                var profileInfo = profileObject["Info"];
+                return new ProfileViewModel()
+                {
+                    Id = profileObject["ProfileId"]?.ToString(),
+                    Name = profileObject["Name"]?.ToString(),
+                    Email = profileInfo != null ? profileInfo["Email"]?.ToString() : "",
+                    City = profileInfo != null ? profileInfo["City"]?.ToString() : "",
+                    State = profileInfo != null ? profileInfo["State"]?.ToString() : "",
+                };
+            }
+            catch (Exception)
+            {
+                return new ProfileViewModel();
+            }
         }
 
         private ProfileViewModel GetProfileByDeviceId(string deviceId)
         {
-            // Set up the request
-            var client = new RestClient(apiRootUrl);
-            var request = new RestRequest(resourceGetProfiles, Method.GET);
-            request.AddHeader("Ocp-Apim-Subscription-Key", subscriptionKey);
-
-            // Filter the profiles based on the current device id
-            request.AddParameter("$filter", "DeviceIds eq " + deviceId);
-
-            // Execute the request to get the profile
-            var getProfileResponse = client.Execute(request);
-            var getProfileContent = getProfileResponse.Content;
-
-            // Get the results as a JArray object
-            var profileResponseObject = JObject.Parse(getProfileContent);
-            var profileArray = (JArray)profileResponseObject["items"];
-
-            // Expecting an array of profiles with one item in it
-            var profileObject = profileArray.First;
-            if (profileObject == null) return new ProfileViewModel();
-
-            var profileInfo = profileObject["Info"];
-            return new ProfileViewModel()
+            try
             {
-                Id = profileObject["ProfileId"]?.ToString(),
-                Name = profileObject["Name"]?.ToString(),
-                Email = profileInfo != null ? profileInfo["Email"]?.ToString() : "",
-                City = profileInfo != null ? profileInfo["City"]?.ToString() : "",
-                State = profileInfo != null ? profileInfo["State"]?.ToString() : "",
-            };
+                // Set up the request
+                var client = new RestClient(apiRootUrl);
+                var request = new RestRequest(resourceGetProfiles, Method.GET);
+                request.AddHeader("Ocp-Apim-Subscription-Key", subscriptionKey);
+
+                // Filter the profiles based on the current device id
+                request.AddParameter("$filter", "DeviceIds eq " + deviceId);
+
+                // Execute the request to get the profile
+                var getProfileResponse = client.Execute(request);
+                var getProfileContent = getProfileResponse.Content;
+
+                // Get the results as a JArray object
+                var profileResponseObject = JObject.Parse(getProfileContent);
+                var profileArray = (JArray)profileResponseObject["items"];
+
+                // Expecting an array of profiles with one item in it
+                var profileObject = profileArray.First;
+                if (profileObject == null) return new ProfileViewModel();
+
+                var profileInfo = profileObject["Info"];
+                return new ProfileViewModel()
+                {
+                    Id = profileObject["ProfileId"]?.ToString(),
+                    Name = profileObject["Name"]?.ToString(),
+                    Email = profileInfo != null ? profileInfo["Email"]?.ToString() : "",
+                    City = profileInfo != null ? profileInfo["City"]?.ToString() : "",
+                    State = profileInfo != null ? profileInfo["State"]?.ToString() : "",
+                };
+            }
+            catch (Exception)
+            {
+                return new ProfileViewModel();
+            }
         }
 
         private List<TrackedEventViewModel> GetEventsByEmail(string email, int limit)
         {
-            // Set up the request
-            var client = new RestClient(apiRootUrl);
-            var request = new RestRequest(resourceGetEvents, Method.GET);
-            request.AddHeader("Ocp-Apim-Subscription-Key", subscriptionKey);
-
-            // Filter the profiles based on the current device id
-            request.AddParameter("$filter", $"User.Email eq {email}");
-            request.AddParameter("$orderBy", "EventTime DESC");
-            request.AddParameter("$top", limit);
-
-            // Execute the request
-            var getEventResponse = client.Execute(request);
-            var getEventContent = getEventResponse.Content;
-
-            // Get the results as a JArray object
-            var eventResponseObject = JObject.Parse(getEventContent);
-            var eventArray = (JArray)eventResponseObject["items"];
-
-            return eventArray.Select(e => new TrackedEventViewModel()
+            try
             {
-                EventTime = e["EventTime"]?.ToString(),
-                EventType = e["EventType"]?.ToString(),
-                Value = e["Value"]?.ToString(),
-                PageUri = e["PageUri"]?.ToString()
-            }).ToList();
+                // Set up the request
+                var client = new RestClient(apiRootUrl);
+                var request = new RestRequest(resourceGetEvents, Method.GET);
+                request.AddHeader("Ocp-Apim-Subscription-Key", subscriptionKey);
+
+                // Filter the profiles based on the current device id
+                request.AddParameter("$filter", $"User.Email eq {email}");
+                request.AddParameter("$orderBy", "EventTime DESC");
+                request.AddParameter("$top", limit);
+
+                // Execute the request
+                var getEventResponse = client.Execute(request);
+                var getEventContent = getEventResponse.Content;
+
+                // Get the results as a JArray object
+                var eventResponseObject = JObject.Parse(getEventContent);
+                var eventArray = (JArray)eventResponseObject["items"];
+
+                if (eventArray == null)
+                    return new List<TrackedEventViewModel>();
+
+                return eventArray.Select(e => new TrackedEventViewModel()
+                {
+                    EventTime = e["EventTime"]?.ToString(),
+                    EventType = e["EventType"]?.ToString(),
+                    Value = e["Value"]?.ToString(),
+                    PageUri = e["PageUri"]?.ToString()
+                }).ToList();
+            }
+            catch (Exception)
+            {
+                return new List<TrackedEventViewModel>();
+            }
         }
         private List<TrackedEventViewModel> GetEventsByDeviceId(string deviceId, int limit)
         {
             // Set up the request
-            var client = new RestClient(apiRootUrl);
-            var request = new RestRequest(resourceGetEvents, Method.GET);
-            request.AddHeader("Ocp-Apim-Subscription-Key", subscriptionKey);
-
-            // Filter the profiles based on the current device id
-            request.AddParameter("$filter", $"DeviceId eq {deviceId}");
-            request.AddParameter("$orderBy", "EventTime DESC");
-            request.AddParameter("$top", limit);
-
-            // Execute the request
-            var getEventResponse = client.Execute(request);
-            var getEventContent = getEventResponse.Content;
-
-            // Get the results as a JArray object
-            var eventResponseObject = JObject.Parse(getEventContent);
-            var eventArray = (JArray)eventResponseObject["items"];
-
-            return eventArray.Select(e => new TrackedEventViewModel()
+            try
             {
-                EventTime = e["EventTime"]?.ToString(),
-                EventType = e["EventType"]?.ToString(),
-                Value = e["Value"]?.ToString(),
-                PageUri = e["PageUri"]?.ToString()
-            }).ToList();
+                var client = new RestClient(apiRootUrl);
+                var request = new RestRequest(resourceGetEvents, Method.GET);
+                request.AddHeader("Ocp-Apim-Subscription-Key", subscriptionKey);
+
+                // Filter the profiles based on the current device id
+                request.AddParameter("$filter", $"DeviceId eq {deviceId}");
+                request.AddParameter("$orderBy", "EventTime DESC");
+                request.AddParameter("$top", limit);
+
+                // Execute the request
+                var getEventResponse = client.Execute(request);
+                var getEventContent = getEventResponse.Content;
+
+                // Get the results as a JArray object
+                var eventResponseObject = JObject.Parse(getEventContent);
+                var eventArray = (JArray)eventResponseObject["items"];
+
+                if (eventArray == null)
+                    return new List<TrackedEventViewModel>();
+
+                return eventArray.Select(e => new TrackedEventViewModel()
+                {
+                    EventTime = e["EventTime"]?.ToString(),
+                    EventType = e["EventType"]?.ToString(),
+                    Value = e["Value"]?.ToString(),
+                    PageUri = e["PageUri"]?.ToString()
+                }).ToList();
+            }
+            catch (Exception)
+            {
+                return new List<TrackedEventViewModel>();
+            }
         }
 
         public List<TopicViewModel> GetTopicsByProfileId(string profileId, int limit)
         {
-            // Set up the request
-            var requestUri = string.Format(resourceGetTopics, profileId);
-            var client = new RestClient(idioApiRootUrl);
-            var request = new RestRequest(requestUri, Method.GET);
-
-            var signatureData = $"GET\n{requestUri}\n{DateTime.Now.ToString("yyy-MM-dd")}";
-
-            var appSignature = HMACSHA1Hash(signatureData, idioAppSecretKey);
-            var deliverySignature = HMACSHA1Hash(signatureData, idioDeliverySecretKey);
-            request.AddHeader("X-App-Authentication", $"{idioAppKey}:{appSignature}");
-            request.AddHeader("X-Delivery-Authentication", $"{idioDeliveryKey}:{deliverySignature}");
-
-            request.AddParameter("rpp", limit);
-
-            // Execute the request
-            var getTopicsResponse = client.Execute(request);
-            var getTopicsContent = getTopicsResponse.Content;
-
-            // Get the results as a JArray object
-            var topicResponseObject = JObject.Parse(getTopicsContent);
-            var topicArray = (JArray)topicResponseObject["topic"];
-
-            return topicArray.Select(e =>
+            try
             {
-                var id = e["id"]?.ToString();
-                var name = e["title"]?.ToString();
-                double score = 0;
-                var scoreString = e["weight"]?.ToString();
-                if (!string.IsNullOrEmpty(scoreString))
+                // Set up the request
+                var requestUri = string.Format(resourceGetTopics, profileId);
+                var client = new RestClient(idioApiRootUrl);
+                var request = new RestRequest(requestUri, Method.GET);
+
+                var signatureData = $"GET\n{requestUri}\n{DateTime.Now.ToString("yyy-MM-dd")}";
+
+                var appSignature = HMACSHA1Hash(signatureData, idioAppSecretKey);
+                var deliverySignature = HMACSHA1Hash(signatureData, idioDeliverySecretKey);
+                request.AddHeader("X-App-Authentication", $"{idioAppKey}:{appSignature}");
+                request.AddHeader("X-Delivery-Authentication", $"{idioDeliveryKey}:{deliverySignature}");
+
+                request.AddParameter("rpp", limit);
+
+                // Execute the request
+                var getTopicsResponse = client.Execute(request);
+                var getTopicsContent = getTopicsResponse.Content;
+
+                // Get the results as a JArray object
+                var topicResponseObject = JObject.Parse(getTopicsContent);
+                var topicArray = (JArray)topicResponseObject["topic"];
+
+                if (topicArray == null)
+                    return new List<TopicViewModel>();
+
+                return topicArray.Select(e =>
                 {
-                    if (double.TryParse(scoreString, out double parsedScore))
-                        score = parsedScore;
-                }
-                return new TopicViewModel()
-                {
-                    Id = id,
-                    Name = name,
-                    Score = score
-                };
-            }).ToList();
+                    var id = e["id"]?.ToString();
+                    var name = e["title"]?.ToString();
+                    double score = 0;
+                    var scoreString = e["weight"]?.ToString();
+                    if (!string.IsNullOrEmpty(scoreString))
+                    {
+                        if (double.TryParse(scoreString, out double parsedScore))
+                            score = parsedScore;
+                    }
+                    return new TopicViewModel()
+                    {
+                        Id = id,
+                        Name = name,
+                        Score = score
+                    };
+                }).ToList();
+            }
+            catch (Exception)
+            {
+                return new List<TopicViewModel>();
+            }
         }
 
         #region helpers

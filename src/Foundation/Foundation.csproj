@@ -342,6 +342,9 @@
     <Reference Include="EPiServer.Personalization.Common, Version=3.1.0.0, Culture=neutral, PublicKeyToken=8fe83dea738b45b7, processorArchitecture=MSIL">
       <HintPath>..\..\packages\EPiServer.Personalization.Common.3.1.0\lib\net461\EPiServer.Personalization.Common.dll</HintPath>
     </Reference>
+    <Reference Include="EPiServer.Personalization.Content.UI, Version=0.2.0.0, Culture=neutral, PublicKeyToken=8fe83dea738b45b7, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\EPiServer.Personalization.Content.UI.0.2.0\lib\net461\EPiServer.Personalization.Content.UI.dll</HintPath>
+    </Reference>
     <Reference Include="EPiServer.Personalization.MaxMindGeolocation, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\packages\EPiServer.Personalization.MaxMindGeolocation.1.0.0\lib\net461\EPiServer.Personalization.MaxMindGeolocation.dll</HintPath>
     </Reference>
@@ -943,6 +946,13 @@
     <Compile Include="Features\Api\AuthorizedApiController.cs" />
     <Compile Include="Features\Api\ExternalLoginConfirmationViewModel.cs" />
     <Compile Include="Features\Api\PublicApiController.cs" />
+    <Compile Include="Features\Blocks\AboutVisitorBlock\AboutVisitorBlock.cs" />
+    <Compile Include="Features\Blocks\AboutVisitorBlock\AboutVisitorBlockController.cs" />
+    <Compile Include="Features\Blocks\AboutVisitorBlock\AboutVisitorBlockTabNames.cs" />
+    <Compile Include="Features\Blocks\AboutVisitorBlock\AboutVisitorBlockViewModel.cs" />
+    <Compile Include="Features\Blocks\AboutVisitorBlock\ProfileViewModel.cs" />
+    <Compile Include="Features\Blocks\AboutVisitorBlock\TopicViewModel.cs" />
+    <Compile Include="Features\Blocks\AboutVisitorBlock\TrackedEventViewModel.cs" />
     <Compile Include="Features\Blocks\AssetsDownloadLinksBlock\AssetsDownloadLinksBlock.cs" />
     <Compile Include="Features\Blocks\AssetsDownloadLinksBlock\AssetsDownloadLinksBlockController.cs" />
     <Compile Include="Features\Blocks\AssetsDownloadLinksBlock\AssetsDownloadLinksBlockViewModel.cs" />
@@ -1617,6 +1627,7 @@
     <Content Include="Assets\vendors\fa-regular-400.svg" />
     <Content Include="Assets\vendors\fa-solid-900.svg" />
     <Content Include="ClientResources\Styles\fontawesome.min.css" />
+    <Content Include="Features\Blocks\AboutVisitorBlock\about-visitor-block.js" />
     <Content Include="Features\Events\CalendarBlock\calendar-block.js" />
     <Content Include="Features\Markets\market.js" />
     <Content Include="modules\_protected\Episerver.Marketing.Connector\ClientResources\Profile\Profile.js" />
@@ -2282,6 +2293,9 @@
     <Content Include="modules\_protected\episerver-labs-grid-view\web.config" />
     <Content Include="modules\_protected\BVNetwork.404Handler\web.config" />
     <Content Include="modules\_protected\BVNetwork.404Handler\BVNetwork.404Handler.zip" />
+    <Content Include="Features\Blocks\AboutVisitorBlock\AboutVisitorBlock.cshtml" />
+    <Content Include="Features\Blocks\AboutVisitorBlock\_about-visitor-group.scss" />
+    <Content Include="modules\_protected\EPiServer.Personalization.Content.UI\EPiServer.Personalization.Content.UI.zip" />
     <None Include="packages.config">
       <SubType>Designer</SubType>
     </None>

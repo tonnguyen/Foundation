@@ -48,6 +48,7 @@ namespace Foundation.Features.Blocks.AboutVisitorBlock
         public override ActionResult Index(AboutVisitorBlock currentBlock)
         {
             var deviceId = Request.Cookies["_madid"]?.Value;
+            var idioId = Request.Cookies["iv"]?.Value;
             var visitorGroups = new List<string>();
             var events = new List<TrackedEventViewModel>();
             var profile = new ProfileViewModel();
@@ -75,11 +76,12 @@ namespace Foundation.Features.Blocks.AboutVisitorBlock
                 }
             }
             if (currentBlock.ShowKeyTopicsSection)
-                topics = GetTopicsByProfileId(Request.Cookies["iv"]?.Value, currentBlock.MaxTopicsToShow);
+                topics = GetTopicsByProfileId(idioId, currentBlock.MaxTopicsToShow);
 
             var model = new AboutVisitorBlockViewModel(currentBlock)
             {
                 ProfileId = profile.Id,
+                IdioId = idioId,
                 Name = profile.Name,
                 Email = profile.Email,
                 Location = profile.GetAddress(),

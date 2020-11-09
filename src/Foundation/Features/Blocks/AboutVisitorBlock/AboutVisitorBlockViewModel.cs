@@ -34,6 +34,7 @@ namespace Foundation.Features.Blocks.AboutVisitorBlock
         public string KeyTopicsSectionHeadingText { get; set; }
 
         public string ProfileId { get; set; }
+        public string IdioId { get; set; }
         public string Name { get; set; }
         public string Email { get; set; }
         public string Location { get; set; }

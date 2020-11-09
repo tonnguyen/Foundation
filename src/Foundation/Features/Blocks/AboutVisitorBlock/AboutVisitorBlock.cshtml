@@ -23,7 +23,7 @@
 
                 <ul class="about-visitor-personal-info">
                     <li><strong>CDP Profile ID: </strong>@(!string.IsNullOrEmpty(Model.ProfileId) ? Model.ProfileId : "N/A")</li>
-                    <li><strong>Content Intelligence ID: </strong></li>
+                    <li><strong>Content Intelligence ID: </strong>@(!string.IsNullOrEmpty(Model.IdioId) ? Model.IdioId : "N/A")</li>
                     <li><strong>Name: </strong>@(!string.IsNullOrEmpty(Model.Name) ? Model.Name : "N/A")</li>
                     <li>
                         <strong>Email: </strong>@{

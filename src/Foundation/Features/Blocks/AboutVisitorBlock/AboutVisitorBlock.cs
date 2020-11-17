@@ -1,14 +1,9 @@
-﻿using EPiServer.DataAnnotations;
+﻿using EPiServer.DataAbstraction;
+using EPiServer.DataAnnotations;
 using Foundation.Cms;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Web;
-using Foundation.Infrastructure;
 using Foundation.Features.Shared;
+using Foundation.Infrastructure;
 using System.ComponentModel.DataAnnotations;
-using EPiServer.DataAbstraction;
-using EPiServer.Shell.ObjectEditing;
 
 namespace Foundation.Features.Blocks.AboutVisitorBlock
 {
@@ -58,8 +53,13 @@ namespace Foundation.Features.Blocks.AboutVisitorBlock
             Width = 400;
             Padding = "p-3";
 
+            ShowVisitorGroupSection = true;
             MaxVisitorsToShow = 10;
+
+            ShowRecentActivitySection = true;
             MaxEventsToShow = 10;
+
+            ShowKeyTopicsSection = true;
             MaxTopicsToShow = 5;
         }
     }

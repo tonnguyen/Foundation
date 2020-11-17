@@ -3,7 +3,6 @@ using EPiServer.Personalization.VisitorGroups;
 using EPiServer.Security;
 using EPiServer.Shell.Security;
 using EPiServer.Web.Mvc;
-using Mediachase.Commerce.Security;
 using Newtonsoft.Json.Linq;
 using RestSharp;
 using System;
@@ -13,7 +12,6 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-using System.Web;
 using System.Web.Mvc;
 
 namespace Foundation.Features.Blocks.AboutVisitorBlock

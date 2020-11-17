@@ -2,93 +2,91 @@
 
 @model AboutVisitorBlockViewModel
 
-@if (!string.IsNullOrEmpty(Model.ProfileId))
-{
-    <div class="about-visitor-overlay">
-        <div class="about-visitor-container">
-            <div class="about-visitor-toggler" style="position: absolute; left: -50px; top: 50%; transform: translateY(-50%); width: 50px; height: 50px; ">
-                <i data-feather="user"></i>
-            </div>
-            <div class="about-visitor-content @Model.CurrentBlock.Margin @Model.CurrentBlock.Padding" 
-                 data-width="@Model.Width" 
-                 style="width:@(Model.Width)px;
+<div class="about-visitor-overlay">
+    <div class="about-visitor-container">
+        <div class="about-visitor-toggler" style="position: absolute; left: -50px; top: 50%; transform: translateY(-50%); width: 50px; height: 50px; ">
+            <i data-feather="user"></i>
+        </div>
+        <div class="about-visitor-content @Model.CurrentBlock.Margin @Model.CurrentBlock.Padding"
+             data-width="@Model.Width"
+             style="width:@(Model.Width)px;
                  background-color: @(!string.IsNullOrEmpty(Model.CurrentBlock.BackgroundColor)?Model.CurrentBlock.BackgroundColor:"#fff");
                  opacity: @Model.CurrentBlock.BlockOpacity">
-                <div class="about-visitor-heading">
-                    <h4>@Model.HeadingText</h4>
-                    <div class="about-visitor-collapse-btn">
-                        <i data-feather="arrow-right"></i>
+            <div class="about-visitor-heading">
+                <h4>@Model.HeadingText</h4>
+                <div class="about-visitor-collapse-btn">
+                    <i data-feather="arrow-right"></i>
+                </div>
+            </div>
+
+            <ul class="about-visitor-personal-info">
+                <li><strong>CDP Profile ID: </strong>@(!string.IsNullOrEmpty(Model.ProfileId) ? Model.ProfileId : "N/A")</li>
+                <li><strong>Content Intelligence ID: </strong>@(!string.IsNullOrEmpty(Model.IdioId) ? Model.IdioId : "N/A")</li>
+                <li><strong>Name: </strong>@(!string.IsNullOrEmpty(Model.Name) ? Model.Name : "N/A")</li>
+                <li>
+                    <strong>Email: </strong>@{
+                        if (string.IsNullOrEmpty(Model.Email))
+                        {
+                            <span>N/A</span>
+                        }
+                        else
+                        {
+                            <a href="mailto:@Model.Email">@Model.Email</a>
+                        }
+                    }
+                </li>
+                <li><strong>Location: </strong>@(!string.IsNullOrEmpty(Model.Location) ? Model.Location : "N/A")</li>
+            </ul>
+
+            @if (Model.ShowVisitorGroupSection && Model.VisitorGroups.Count > 0)
+            {
+                <div class="about-visitor-section">
+                    <h5 class="about-visitor-section-header">@Model.VisitorGroupSectionHeadingText</h5>
+                    <div class="about-visitor-section-body">
+                        <ul>
+                            @foreach (var group in Model.VisitorGroups)
+                            {
+                                <li>@group</li>
+                            }
+                        </ul>
                     </div>
                 </div>
+            }
 
-                <ul class="about-visitor-personal-info">
-                    <li><strong>CDP Profile ID: </strong>@(!string.IsNullOrEmpty(Model.ProfileId) ? Model.ProfileId : "N/A")</li>
-                    <li><strong>Content Intelligence ID: </strong>@(!string.IsNullOrEmpty(Model.IdioId) ? Model.IdioId : "N/A")</li>
-                    <li><strong>Name: </strong>@(!string.IsNullOrEmpty(Model.Name) ? Model.Name : "N/A")</li>
-                    <li>
-                        <strong>Email: </strong>@{
-                            if (string.IsNullOrEmpty(Model.Email))
+            @if (Model.ShowRecentActivitySection && Model.Events.Count() > 0)
+            {
+                <div class="about-visitor-section tracked-event-section">
+                    <h5 class="about-visitor-section-header">@Model.RecentActivitySectionHeadingText</h5>
+                    <div class="about-visitor-section-body">
+                        <ul>
+                            @foreach (var item in Model.Events)
                             {
-                                <span>N/A</span>
+                                <li>
+                                    <strong>@item.EventType: </strong><a href="@item.PageUri" target="_blank">@item.Value</a><br /><small><em>(@item.EventTime)</em></small>
+                                </li>
                             }
-                            else
+                        </ul>
+                    </div>
+                </div>
+            }
+
+            @if (Model.ShowKeyTopicsSection && Model.Topics.Count() > 0)
+            {
+                <div class="about-visitor-section">
+                    <h5 class="about-visitor-section-header">@Model.KeyTopicsSectionHeadingText</h5>
+                    <div class="about-visitor-section-body">
+                        <ul>
+                            @foreach (var item in Model.Topics)
                             {
-                                <a href="mailto:@Model.Email">@Model.Email</a>
+                                <li>
+                                    @item.Name (@item.Score)
+                                </li>
                             }
-                        }
-                    </li>
-                    <li><strong>Location: </strong>@(!string.IsNullOrEmpty(Model.Location) ? Model.Location : "N/A")</li>
-                </ul>
-
-                @if (Model.ShowVisitorGroupSection && Model.VisitorGroups.Count > 0)
-                {
-                    <div class="about-visitor-section">
-                        <h5 class="about-visitor-section-header">@Model.VisitorGroupSectionHeadingText</h5>
-                        <div class="about-visitor-section-body">
-                            <ul>
-                                @foreach (var group in Model.VisitorGroups)
-                                {
-                                    <li>@group</li>
-                                }
-                            </ul>
-                        </div>
+                        </ul>
                     </div>
-                }
-
-                @if (Model.ShowRecentActivitySection && Model.Events.Count() > 0)
-                {
-                    <div class="about-visitor-section tracked-event-section">
-                        <h5 class="about-visitor-section-header">@Model.RecentActivitySectionHeadingText</h5>
-                        <div class="about-visitor-section-body">
-                            <ul>
-                                @foreach (var item in Model.Events)
-                                {
-                                    <li>
-                                        <strong>@item.EventType: </strong><a href="@item.PageUri" target="_blank">@item.Value</a><br/><small><em>(@item.EventTime)</em></small>
-                                    </li>
-                                }
-                            </ul>
-                        </div>
-                    </div>
-                }
-
-                @if (Model.ShowKeyTopicsSection && Model.Topics.Count() > 0)
-                {
-                    <div class="about-visitor-section">
-                        <h5 class="about-visitor-section-header">@Model.KeyTopicsSectionHeadingText</h5>
-                        <div class="about-visitor-section-body">
-                            <ul>
-                                @foreach (var item in Model.Topics)
-                                {
-                                    <li>
-                                        @item.Name (@item.Score)
-                                    </li>
-                                }
-                            </ul>
-                        </div>
-                    </div>
-                }
-            </div>
+                </div>
+            }
         </div>
     </div>
-}
+</div>
+

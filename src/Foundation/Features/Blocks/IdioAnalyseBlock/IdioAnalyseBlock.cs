@@ -1,12 +1,8 @@
-﻿using EPiServer.DataAnnotations;
+﻿using EPiServer.DataAbstraction;
+using EPiServer.DataAnnotations;
 using Foundation.Cms;
 using Foundation.Features.Shared;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Web;
 using Foundation.Infrastructure;
-using EPiServer.DataAbstraction;
 
 namespace Foundation.Features.Blocks.IdioAnalyseBlock
 {
@@ -15,7 +11,7 @@ namespace Foundation.Features.Blocks.IdioAnalyseBlock
         Description = "Block to show information of content analysed by Idio",
         GroupName = GroupNames.Content)]
     [SiteImageUrl("~/assets/icons/cms/blocks/CMS-icon-block-30.png")]
-    public class IdioAnalyseBlock: FoundationBlockData
+    public class IdioAnalyseBlock : FoundationBlockData
     {
         public override void SetDefaultValues(ContentType contentType)
         {

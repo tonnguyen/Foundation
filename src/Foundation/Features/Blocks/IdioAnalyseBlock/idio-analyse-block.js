@@ -75,6 +75,8 @@ export default class IdioAnalyseBlock {
         $('.topics-cloud').jQCloud(idioTopics.map(o => ({
             text: o.Title,
             weight: o.Weight
-        })));
+        })), {
+            delay: 50
+        });
     }
 }

@@ -954,6 +954,10 @@
     <Compile Include="Features\Blocks\ButtonBlock\ButtonBlockStyleSelectionFactory.cs" />
     <Compile Include="Features\Blocks\CommentsBlock\CommentFormViewModel.cs" />
     <Compile Include="Features\Blocks\ElevatedRoleBlock\ElevatedRoleSelectionFactory.cs" />
+    <Compile Include="Features\Blocks\IdioAnalyseBlock\IdioAnalyseBlock.cs" />
+    <Compile Include="Features\Blocks\IdioAnalyseBlock\IdioAnalyseBlockController.cs" />
+    <Compile Include="Features\Blocks\IdioAnalyseBlock\IdioAnalyseBlockViewModel.cs" />
+    <Compile Include="Features\Blocks\IdioAnalyseBlock\IdioTopicViewModel.cs" />
     <Compile Include="Features\Blocks\OrderSearchBlock\OrderSearchBlock.cs" />
     <Compile Include="Features\Blocks\OrderSearchBlock\OrderSearchBlockViewModel.cs" />
     <Compile Include="Features\Blocks\SubscriptionBlock\SubscriptionFormViewModel.cs" />
@@ -1617,6 +1621,7 @@
     <Content Include="Assets\vendors\fa-regular-400.svg" />
     <Content Include="Assets\vendors\fa-solid-900.svg" />
     <Content Include="ClientResources\Styles\fontawesome.min.css" />
+    <Content Include="Features\Blocks\IdioAnalyseBlock\idio-analyse-block.js" />
     <Content Include="Features\Events\CalendarBlock\calendar-block.js" />
     <Content Include="Features\Markets\market.js" />
     <Content Include="modules\_protected\Episerver.Marketing.Connector\ClientResources\Profile\Profile.js" />
@@ -2282,6 +2287,8 @@
     <Content Include="modules\_protected\episerver-telemetry-ui\episerver-telemetry-ui.zip" />
     <Content Include="modules\_protected\episerver-labs-content-manager\web.config" />
     <Content Include="modules\_protected\episerver-labs-grid-view\web.config" />
+    <Content Include="Features\Blocks\IdioAnalyseBlock\IdioAnalyseBlock.cshtml" />
+    <Content Include="Features\Blocks\IdioAnalyseBlock\_idio-analyse-block.scss" />
     <None Include="packages.config">
       <SubType>Designer</SubType>
     </None>

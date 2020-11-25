@@ -1,0 +1,73 @@
+﻿@using Foundation.Features.Blocks.IdioAnalyseBlock
+@using Newtonsoft.Json;
+
+@model IdioAnalyseBlockViewModel
+
+
+<div class="idio-analyse-toggler">
+    <i data-feather="activity"></i>
+</div>
+<div class="idio-analyse-overlay">
+    <div class="idio-analyse-content @Model.CurrentBlock.Margin @Model.CurrentBlock.Padding"
+         style="background-color: @(!string.IsNullOrEmpty(Model.CurrentBlock.BackgroundColor)?Model.CurrentBlock.BackgroundColor:"#fff");
+                 opacity: @Model.CurrentBlock.BlockOpacity;
+                 display: none;">
+
+        <div>
+            <ul class="nav nav-tabs" role="tablist">
+                <li class="nav-item">
+                    <a class="nav-link active" data-toggle="tab" href="#idio-analyse-profile">
+                        Profile
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-toggle="tab" href="#idio-analyse-topics">
+                        Topics
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-toggle="tab" href="#idio-analyse-content">
+                        Content
+                    </a>
+                </li>
+                <li class="tool-right">
+                    <div class="idio-analyse-collapse-btn">
+                        <i data-feather="x-circle"></i>
+                    </div>
+                </li>
+            </ul>
+        </div>
+        <div class="tab-content">
+            <div class="tab-pane fade active show" id="idio-analyse-profile">
+                <div class="topics-cloud" style="width: 600px; height: 350px"></div>
+            </div>
+            <div class="tab-pane fade" id="idio-analyse-topics">
+                <table class="table table-bordered">
+                    <thead class="thead-light"> 
+                        <tr>
+                            <th>Topic</th>
+                            <th>Weight</th>
+                            <th>Anchor</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var topic in Model.Topics)
+                        {
+                            <tr>
+                                <td>@topic.Title</td>
+                                <td>@topic.Weight</td>
+                                <td>@topic.Anchor</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <div class="tab-pane fade" id="idio-analyse-content">
+                @Model.Content
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    let idioTopics = @Html.Raw(JsonConvert.SerializeObject(Model.Topics));
+</script>

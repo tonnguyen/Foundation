@@ -9,6 +9,7 @@ import { ContentSearch } from "../../../Features/Search/search";
 import Blog from "Features/Blog/blog";
 import Locations from "Features/Locations/locations";
 import CalendarBlock from "Features/Events/CalendarBlock/calendar-block";
+import IdioAnalyseBlock from "Features/Blocks/IdioAnalyseBlock/idio-analyse-block";
 
 export default class FoundationCms {
     init() {
@@ -83,5 +84,8 @@ export default class FoundationCms {
 
         let calendarBlock = new CalendarBlock();
         calendarBlock.init();
+
+        let idioAnalyseBlock = new IdioAnalyseBlock();
+        idioAnalyseBlock.init();
     }
 }

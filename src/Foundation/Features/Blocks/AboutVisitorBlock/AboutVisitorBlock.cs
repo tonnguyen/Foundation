@@ -10,7 +10,7 @@ namespace Foundation.Features.Blocks.AboutVisitorBlock
     [ContentType(DisplayName = "About Visitor Block",
         GUID = "49713B53-2CC5-4579-B7AA-1173B0FCAE18",
         Description = "Block to show information of Visitor",
-        GroupName = GroupNames.Content)]
+        GroupName = "Personalization")]
     [SiteImageUrl("~/assets/icons/cms/blocks/CMS-icon-block-30.png")]
     public class AboutVisitorBlock : FoundationBlockData
     {
@@ -54,10 +54,10 @@ namespace Foundation.Features.Blocks.AboutVisitorBlock
             Padding = "p-3";
 
             ShowVisitorGroupSection = true;
-            MaxVisitorsToShow = 10;
+            MaxVisitorsToShow = 5;
 
             ShowRecentActivitySection = true;
-            MaxEventsToShow = 10;
+            MaxEventsToShow = 5;
 
             ShowKeyTopicsSection = true;
             MaxTopicsToShow = 5;

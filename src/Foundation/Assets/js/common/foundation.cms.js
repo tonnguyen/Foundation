@@ -9,7 +9,6 @@ import { ContentSearch } from "../../../Features/Search/search";
 import Blog from "Features/Blog/blog";
 import Locations from "Features/Locations/locations";
 import CalendarBlock from "Features/Events/CalendarBlock/calendar-block";
-import AboutVisitorBlock from "Features/Blocks/AboutVisitorBlock/about-visitor-block";
 
 export default class FoundationCms {
     init() {
@@ -84,8 +83,5 @@ export default class FoundationCms {
 
         let calendarBlock = new CalendarBlock();
         calendarBlock.init();
-
-        let aboutVisitorBlock = new AboutVisitorBlock();
-        aboutVisitorBlock.init();
     }
 }

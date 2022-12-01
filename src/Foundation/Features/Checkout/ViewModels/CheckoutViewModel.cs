@@ -100,6 +100,18 @@ namespace Foundation.Features.Checkout.ViewModels
         public string SystemKeyword { get; set; }
 
         public Guid PaymentMethodId { get; set; }
+
+        public string Token { get; set; }
+
+        public string CardId { get; set; }
+
+        public bool CreateAccount { get; set; }
+
+        public string AccessToken { get; set; }
+
+        public string Email { get; set; }
+
+        public string Phone { get; set; }
     }
 
     public class PaymentPlanSetting

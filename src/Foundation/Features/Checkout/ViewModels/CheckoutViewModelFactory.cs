@@ -1,4 +1,6 @@
+using EPiServer.Commerce.Bolt;
 using EPiServer.Commerce.Order;
+using EPiServer.Commerce.Order.Internal;
 using EPiServer.Core;
 using EPiServer.Framework.Localization;
 using EPiServer.Web.Routing;
@@ -15,6 +17,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 
 namespace Foundation.Features.Checkout.ViewModels
 {
@@ -191,11 +194,23 @@ namespace Foundation.Features.Checkout.ViewModels
 
             foreach (var viewModelPayment in viewModel.Payments)
             {
-                viewModelPayment.Amount =
-                    new Money(
-                        cart.GetFirstForm().Payments
-                            .FirstOrDefault(p => p.PaymentMethodId == viewModelPayment.PaymentMethodId)?.Amount ?? 0,
-                        cart.Currency);
+                var p = cart.GetFirstForm().Payments.FirstOrDefault(p => p.PaymentMethodId == viewModelPayment.PaymentMethodId);
+                viewModelPayment.Amount = new Money(p == null ? 0 : p.Amount, cart.Currency);
+                var serializablePayment = p as SerializablePayment;
+                if (serializablePayment != null  && serializablePayment.Properties["Epi_Token"] != null)
+                {
+                    var json = serializablePayment.Properties["Epi_Token"].ToString();
+                    if (json.Contains("bin"))
+                    {
+                        var card = JsonSerializer.Deserialize<EPiServer.Commerce.Bolt.Models.CreditCard>(json);
+                        viewModelPayment.Description += $" - ({card.LastFour})";
+                    }
+                    else if (json.Contains("exp_month"))
+                    {
+                        var card = JsonSerializer.Deserialize<EPiServer.Commerce.Bolt.Models.PaymentMethod>(json);
+                        viewModelPayment.Description += $" - ({card.LastFour})";
+                    }
+                }
             }
 
             if (!cart.GetFirstForm().
@@ -216,12 +231,7 @@ namespace Foundation.Features.Checkout.ViewModels
             viewModel.SelectedPayment = method.Description;
             var payment = cart.GetFirstForm().
                 Payments.FirstOrDefault();
-            var creditCardPayment = payment as ICreditCardPayment;
-            if (creditCardPayment != null)
-            {
-                viewModel.SelectedPayment +=
-                    $" - ({creditCardPayment.CreditCardNumber.Substring(creditCardPayment.CreditCardNumber.Length - 4)})";
-            }
+            
         }
 
         private AddressModel CreateBillingAddressModel(string currentBillingAdressId)

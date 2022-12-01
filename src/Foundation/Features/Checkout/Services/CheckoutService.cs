@@ -1,15 +1,19 @@
 ﻿using EPiServer;
+using EPiServer.Commerce.Bolt;
 using EPiServer.Commerce.Marketing;
 using EPiServer.Commerce.Order;
+using EPiServer.Commerce.Order.Internal;
 using EPiServer.Core;
 using EPiServer.Framework.Localization;
 using EPiServer.Logging;
 using EPiServer.Security;
+using EPiServer.Web;
 using EPiServer.Web.Routing;
 using Foundation.Features.Checkout.ViewModels;
 using Foundation.Features.MyAccount.AddressBook;
 using Foundation.Features.Settings;
 using Foundation.Features.Shared;
+using Foundation.Infrastructure.Cms.Extensions;
 using Foundation.Infrastructure.Cms.Settings;
 using Foundation.Infrastructure.Commerce;
 using Foundation.Infrastructure.Commerce.Customer.Services;
@@ -43,6 +47,7 @@ namespace Foundation.Features.Checkout.Services
         private readonly ILogger _log = LogManager.GetLogger(typeof(CheckoutService));
         private readonly ILoyaltyService _loyaltyService;
         private readonly ISettingsService _settingsService;
+        private readonly IUrlResolver _urlResolver;
 
         public AuthenticatedPurchaseValidation AuthenticatedPurchaseValidation { get; private set; }
         public AnonymousPurchaseValidation AnonymousPurchaseValidation { get; private set; }
@@ -59,7 +64,8 @@ namespace Foundation.Features.Checkout.Services
             IMailService mailService,
             IPromotionEngine promotionEngine,
             ILoyaltyService loyaltyService,
-            ISettingsService settingsService)
+            ISettingsService settingsService,
+            IUrlResolver urlResolver)
         {
             _addressBookService = addressBookService;
             _orderGroupFactory = orderGroupFactory;
@@ -77,6 +83,28 @@ namespace Foundation.Features.Checkout.Services
             AnonymousPurchaseValidation = new AnonymousPurchaseValidation(_localizationService);
             CheckoutAddressHandling = new CheckoutAddressHandling(_addressBookService);
             _settingsService = settingsService;
+            _urlResolver = urlResolver;
+        }
+
+        public string GetCheckoutUrl(string action, Dictionary<string,string> queryString)
+        {
+            var url = _urlResolver.GetUrl(_settingsService.GetSiteSettings<ReferencePageSettings>().CheckoutPage);
+            if (!action.IsNullOrEmpty()) 
+            {
+                url = VirtualPathUtilityEx.AppendTrailingSlash(url) + action;
+            }
+
+            if (queryString.Keys.Count == 0)
+            {
+                return url;
+            }
+
+            url += "?";
+            foreach (var key in queryString.Keys)
+            {
+                url += queryString[key] + "&";
+            }
+            return url.Substring(0, url.Length - 1);
         }
 
         public virtual void UpdateShippingMethods(ICart cart, IList<ShipmentViewModel> shipmentViewModels)
@@ -90,10 +118,17 @@ namespace Foundation.Features.Checkout.Services
 
         public virtual void UpdateShippingAddresses(ICart cart, CheckoutViewModel viewModel)
         {
+            var boltPayment = cart.GetFirstForm().Payments.FirstOrDefault(x => (x.BillingAddress?.Id ?? "").Equals("BoltAddress"));
             var shipments = cart.GetFirstForm().Shipments;
             for (var index = 0; index < shipments.Count; index++)
             {
                 shipments.ElementAt(index).ShippingAddress = _addressBookService.ConvertToAddress(viewModel.Shipments[index].Address, cart);
+                if (boltPayment?.BillingAddress != null && !boltPayment.BillingAddress.DaytimePhoneNumber.IsNullOrEmpty()
+                    && !boltPayment.BillingAddress.Email.IsNullOrEmpty())
+                {
+                    shipments.ElementAt(index).ShippingAddress.DaytimePhoneNumber = boltPayment.BillingAddress.DaytimePhoneNumber;
+                    shipments.ElementAt(index).ShippingAddress.Email = boltPayment.BillingAddress.Email;
+                }
             }
         }
 
@@ -136,7 +171,7 @@ namespace Foundation.Features.Checkout.Services
 
         public virtual void CreateAndAddPaymentToCart(ICart cart, CheckoutViewModel viewModel)
         {
-            var total = viewModel.OrderSummary.PaymentTotal;
+            var total = viewModel.OrderSummary?.PaymentTotal ?? cart.GetTotal().Amount;
             var paymentMethod = viewModel.Payment;
             if (paymentMethod == null)
             {
@@ -146,8 +181,35 @@ namespace Foundation.Features.Checkout.Services
             var payment = cart.GetFirstForm().Payments.FirstOrDefault(x => x.PaymentMethodId == paymentMethod.PaymentMethodId);
             if (payment == null)
             {
-                payment = paymentMethod.CreatePayment(total, cart);
-                cart.AddPayment(payment, _orderGroupFactory);
+                var boltPayment = paymentMethod.CreatePayment(total, cart) as SerializablePayment;
+                if (!viewModel.Token.IsNullOrEmpty())
+                {
+                    boltPayment.Properties[BoltPayment.TokenField] = viewModel.Token;
+                }
+
+                if (viewModel.CreateAccount)
+                {
+                    boltPayment.Properties["CreateAccount"] = true;
+                }
+
+                if (!viewModel.CardId.IsNullOrEmpty())
+                {
+                    boltPayment.Properties[BoltPayment.CardIdField] = viewModel.CardId;
+                }
+
+                if (!viewModel.AccessToken.IsNullOrEmpty())
+                {
+                    boltPayment.Properties["AccessToken"] = viewModel.AccessToken;
+                }
+
+                var billingAddress = cart.CreateOrderAddress(_orderGroupFactory, "BoltAddress");
+                if (!viewModel.Email.IsNullOrEmpty() && viewModel.Phone.IsNullOrEmpty())
+                {
+                    billingAddress.Email = viewModel.Email;
+                    billingAddress.DaytimePhoneNumber = viewModel.Phone;
+                }
+                boltPayment.BillingAddress = billingAddress;
+                cart.AddPayment(boltPayment, _orderGroupFactory);
             }
             else
             {

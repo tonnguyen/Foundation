@@ -1,0 +1,30 @@
+﻿@model EPiServer.Commerce.Bolt.BoltPayment
+@{
+    EPiServer.Commerce.Bolt.Models.CreditCard cc = null;
+    EPiServer.Commerce.Bolt.Models.CreditCardView ccView = null;
+    DateTime? date = null;
+    try
+    {
+        cc = System.Text.Json.JsonSerializer.Deserialize<EPiServer.Commerce.Bolt.Models.CreditCard>(Model.Token);
+    }
+    catch (Exception) { }
+
+    if (cc == null)
+    {
+        try
+        {
+            ccView = System.Text.Json.JsonSerializer.Deserialize<EPiServer.Commerce.Bolt.Models.CreditCardView>(Model.Token);
+            date = DateTimeOffset.FromUnixTimeMilliseconds(ccView.Expiration).Date;
+        }
+        catch (Exception) { }
+    }
+}
+<div class="quicksilver-well">
+    <h4>@Html.Translate("/OrderConfirmation/PaymentDetails")</h4>
+    <p>
+        @Html.Translate("/OrderConfirmation/PaymentInfo/CardType"): @(cc == null ? ccView.Network : cc.Network)<br>
+        @Html.Translate("/OrderConfirmation/PaymentInfo/Owner"): @Model.CustomerName<br>
+        @Html.Translate("/OrderConfirmation/PaymentInfo/CardNumber"): ************@(cc == null ? ccView.LastFour : cc.LastFour)<br>
+        @Html.Translate("/OrderConfirmation/PaymentInfo/ExpirationDate"): @(cc == null ? (date.Value.Month.ToString() + " - " + date.Value.Year.ToString()) : cc.Expiration)<br>
+    </p>
+</div>

@@ -48,6 +48,13 @@
                 </div>
                 <br />
                 <div class="row">
+                    <div class="col-12">
+                        @Html.PasswordFor(x => x.RegisterAccountViewModel.Address.DaytimePhoneNumber, new { @class = "login__input", placeholder = "Phone number" })
+                        @Html.ValidationMessageFor(x => x.RegisterAccountViewModel.Address.DaytimePhoneNumber)
+                    </div>
+                </div>
+                <br />
+                <div class="row">
                     <div class="col-md-6">
                         @Html.TextBoxFor(x => x.RegisterAccountViewModel.Address.FirstName, new { @class = "login__input", placeholder = "FirstName" })
                         @Html.ValidationMessageFor(x => x.RegisterAccountViewModel.Address.FirstName)

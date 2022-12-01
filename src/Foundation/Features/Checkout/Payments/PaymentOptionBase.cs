@@ -15,7 +15,7 @@ namespace Foundation.Features.Checkout.Payments
         public Guid PaymentMethodId { get; }
         public abstract string SystemKeyword { get; }
         public string Name { get; }
-        public string Description { get; }
+        public string Description { get; set; }
         public Money Amount { get; set; }
 
         protected PaymentOptionBase(LocalizationService localizationService,

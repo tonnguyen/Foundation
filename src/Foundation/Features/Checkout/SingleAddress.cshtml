@@ -56,7 +56,7 @@
 
             <li class="@(Model.Shipments[index].ShippingAddressType == 1 && User.Identity.IsAuthenticated ? "hidden" : "") jsFormInputRequired jsNewShippingAddressForm">
                 @Html.HiddenFor(model => model.Shipments[index].Address.Name)
-                @Html.HiddenFor(model => model.Shipments[index].Address.DaytimePhoneNumber)
+                @Html.HiddenFor(model => model.Shipments[index].Address.Organization)
                 @Html.HiddenFor(model => model.Shipments[index].Address.BillingDefault)
                 @Html.HiddenFor(model => model.Shipments[index].Address.ShippingDefault)
                 <ul class="style-list-none">
@@ -79,13 +79,13 @@
                         <div class="row">
                             <div class="form-group col-xs-12 col-md-6">
                                 @Html.LabelFor(model => model.Shipments[index].Address.Email)
-                                @Html.TextBoxFor(model => model.Shipments[index].Address.Email, new { @class = "textbox" })
+                                @Html.TextBoxFor(model => model.Shipments[index].Address.Email, new { @class = "textbox jsRequired" })
                                 @Html.ValidationMessageFor(model => model.Shipments[index].Address.Email)
                             </div>
                             <div class="form-group col-xs-12 col-md-6">
-                                @Html.LabelFor(model => model.Shipments[index].Address.Organization)
-                                @Html.TextBoxFor(model => model.Shipments[index].Address.Organization, new { @class = "textbox" })
-                                @Html.ValidationMessageFor(model => model.Shipments[index].Address.Organization)
+                                @Html.LabelFor(model => model.Shipments[index].Address.DaytimePhoneNumber)
+                                @Html.TextBoxFor(model => model.Shipments[index].Address.DaytimePhoneNumber, new { @class = "textbox jsRequired" })
+                                @Html.ValidationMessageFor(model => model.Shipments[index].Address.DaytimePhoneNumber)
                             </div>
                         </div>
                     </li>

@@ -1,0 +1,61 @@
+﻿@model Foundation.Features.Checkout.Payments.GenericCreditCardPaymentOption
+@inject EPiServer.Commerce.Bolt.BoltOptions boltOptions
+@{
+    var baseEmbeddedUrl = boltOptions.EnvironmentType == EPiServer.Commerce.Bolt.EnvironmentType.Production ? "connect.bolt.com" : "connect-sandbox.bolt.com";
+}
+<div>
+    <input type="hidden" name="SystemKeyword" />
+    <input type="hidden" name="PaymentMethodId" />
+    <input type="hidden" name="Token" id="Token" value="" />
+    <input type="hidden" name="AccessToken" id="AccessToken" value="" />
+    <input type="hidden" name="CardId" id="CardId" value="" />
+    <input type="hidden" name="CreateAccount" id="CreateAccount" value="" />
+</div>
+
+<script type="text/javascript" src="/features/checkout/bolt.js"></script>
+<script type="text/javascript" src="/js/vendors/axios.min.js"></script>
+<script type="text/javascript" defer>
+    function loadBoltCheckout() {
+        var embedScript = document.createElement('script');
+        embedScript.async = true;
+        embedScript.src = 'https://@baseEmbeddedUrl/embed.js';
+        embedScript.setAttribute("data-publishable-key", '@boltOptions.PublishableKey');
+        embedScript.onload = function () {
+            initBoltCheckout('@boltOptions.PublishableKey', @User.Identity.IsAuthenticated.ToString().ToLower(), '@Context.User.Identity.Name', @((boltOptions.EnvironmentType == EPiServer.Commerce.Bolt.EnvironmentType.Production).ToString().ToLower()));
+        };
+        document.children[0].appendChild(embedScript);
+    }
+    loadBoltCheckout();
+</script>
+@if (!User.Identity.IsAuthenticated)
+{
+    <div id="divEmail" class="form-group p-2">
+        <label for="Email">@Html.TranslateFallback("/Bolt/Email", "Email")</label>
+        <input type="email" id="Email" name="Email" class="textbox jsRequired" data-val-required="Email is required" />
+        <span class="field-validation-valid"></span>
+    </div>
+    <div id="divPhone" class="form-group p-2">
+        <label for="Phone">@Html.TranslateFallback("/Bolt/Phone", "Phone Number")</label>
+        <input type="tel" id="Phone" name="Phone" class="textbox jsRequired" data-val-required="Phone is required" />
+    </div>
+}
+<div id="boltAccount">
+</div>
+<div id="boltPayment">
+</div>
+<div id="boltCheckbox">
+</div>
+@if (User.Identity.IsAuthenticated)
+{
+    <div id="login-status"></div>
+    
+    <div id="boltCards">
+        <select id="selectCard">
+        <option value="0">@Html.TranslateFallback("/Bolt/ChooseACard", "Choose a Card")</option>
+        </select>
+    </div>
+}
+
+
+
+

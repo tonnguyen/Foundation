@@ -7,7 +7,9 @@ using Mediachase.Commerce.Orders;
 using Mediachase.Commerce.Orders.Dto;
 using Mediachase.Commerce.Orders.Managers;
 using Mediachase.Commerce.Shared;
+using Mediachase.Data.Provider;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Data.SqlClient;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -18,11 +20,15 @@ namespace Foundation.Infrastructure.Commerce.Install.Steps
 {
     public class AddPaymentMethods : BaseInstallStep
     {
+        private readonly IConnectionStringHandler _connectionStringHandler;
+
         public AddPaymentMethods(IContentRepository contentRepository,
             ReferenceConverter referenceConverter,
             IMarketService marketService,
-            IWebHostEnvironment webHostEnvironment) : base(contentRepository, referenceConverter, marketService, webHostEnvironment)
+            IWebHostEnvironment webHostEnvironment, 
+            IConnectionStringHandler connectionStringHandler) : base(contentRepository, referenceConverter, marketService, webHostEnvironment)
         {
+            _connectionStringHandler = connectionStringHandler;
         }
 
         public override int Order => 5;
@@ -31,7 +37,7 @@ namespace Foundation.Infrastructure.Commerce.Install.Steps
 
         protected override void ExecuteInternal(IProgressMessenger progressMessenger)
         {
-            using (var stream = new FileStream(Path.Combine(WebHostEnvironment.ContentRootPath, @"App_Data", @"PaymentMethods.xml"), FileMode.Open))
+            using (var stream = new FileStream(Path.Combine(WebHostEnvironment.ContentRootPath, "App_Data", "PaymentMethods.xml"), FileMode.Open))
             {
                 var allMarkets = MarketService.GetAllMarkets().Where(x => x.IsEnabled).ToList();
                 foreach (var language in allMarkets.SelectMany(x => x.Languages).Distinct())
@@ -69,6 +75,7 @@ namespace Foundation.Infrastructure.Commerce.Install.Steps
                     }
                 }
             }
+            UpdateCountryCodesForBolt();
         }
 
         private static void AddPaymentMethod(Guid id, string name, string systemKeyword, string description, string implementationClass, string gatewayClass,
@@ -81,6 +88,19 @@ namespace Foundation.Infrastructure.Commerce.Install.Steps
             var paymentMethod = new PaymentMethod(row);
             paymentMethod.MarketId.AddRange(markets.Where(x => x.IsEnabled && x.Languages.Contains(language)).Select(x => x.MarketId));
             paymentMethod.SaveChanges();
+        }
+
+        private void UpdateCountryCodesForBolt()
+        {
+            using (var connection = new SqlConnection(_connectionStringHandler.Commerce.ConnectionString))
+            {
+                connection.Open();
+                var command = new SqlCommand("Update Country set Code = 'US' where Code = 'USA'", connection)
+                {
+                    CommandType = System.Data.CommandType.Text
+                };
+                command.ExecuteNonQuery();
+            }
         }
     }
 }

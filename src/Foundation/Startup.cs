@@ -1,5 +1,6 @@
 ﻿using Advanced.CMS.AdvancedReviews;
 using EPiServer.Authorization;
+using EPiServer.Commerce.Bolt;
 using EPiServer.ContentApi.Cms;
 using EPiServer.ContentApi.Cms.Internal;
 using EPiServer.ContentDefinitionsApi;
@@ -130,7 +131,7 @@ namespace Foundation
             });
 
             // Content Definitions API
-            services.AddContentDefinitionsApi(options =>
+            services.AddContentDefinitionsApi(OpenIDConnectOptionsDefaults.AuthenticationScheme, options =>
             {
                 // Accept anonymous calls
                 options.DisableScopeValidation = true;
@@ -168,7 +169,7 @@ namespace Foundation
                 application.RedirectUris.Add(new Uri("https://oauth.pstmn.io/v1/callback"));
                 options.Applications.Add(application);
                 options.AllowResourceOwnerPasswordFlow = true;
-            });
+            }, null);
             
             services.AddOpenIDConnectUI();
 
@@ -235,6 +236,7 @@ namespace Foundation
 
             // Add ContentManager
             services.AddContentManager();
+            services.Configure<BoltOptions>(x => x.EnvironmentType = EnvironmentType.Sanbox);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

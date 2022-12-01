@@ -1,5 +1,6 @@
 ﻿using EPiServer;
 using EPiServer.Cms.UI.AspNetIdentity;
+using EPiServer.Commerce.Bolt;
 using EPiServer.Commerce.Order;
 using EPiServer.Core;
 using EPiServer.Framework.Localization;
@@ -13,19 +14,18 @@ using Foundation.Features.MyAccount.AddressBook;
 using Foundation.Features.MyOrganization.Organization;
 using Foundation.Features.NamedCarts;
 using Foundation.Features.Settings;
+using Foundation.Infrastructure.Cms.Extensions;
 using Foundation.Infrastructure.Cms.Settings;
 using Foundation.Infrastructure.Cms.Users;
 using Foundation.Infrastructure.Commerce;
 using Foundation.Infrastructure.Commerce.Customer.Services;
 using Foundation.Infrastructure.Commerce.GiftCard;
-using Foundation.Infrastructure.Personalization;
 using Foundation.Infrastructure.Helpers;
+using Foundation.Infrastructure.Personalization;
 using Mediachase.Commerce;
 using Mediachase.Commerce.Shared;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
-using Microsoft.AspNetCore.Mvc.Routing;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -56,6 +56,8 @@ namespace Foundation.Features.Checkout
         private readonly ShipmentViewModelFactory _shipmentViewModelFactory;
         private readonly IGiftCardService _giftCardService;
         private readonly ISettingsService _settingsService;
+        private readonly IApiService _apiService;
+        private readonly BoltOptions _boltOptions;
 
         public CheckoutController(IPageRouteHelper pageRouteHelper,
             IOrderRepository orderRepository,
@@ -76,7 +78,9 @@ namespace Foundation.Features.Checkout
             IOrganizationService organizationService,
             ShipmentViewModelFactory shipmentViewModelFactory,
             IGiftCardService giftCardService,
-            ISettingsService settingsService)
+            ISettingsService settingsService,
+            IApiService apiService, 
+            BoltOptions boltOptions)
         {
             _pageRouteHelper = pageRouteHelper;
             _orderRepository = orderRepository;
@@ -98,6 +102,8 @@ namespace Foundation.Features.Checkout
             _shipmentViewModelFactory = shipmentViewModelFactory;
             _giftCardService = giftCardService;
             _settingsService = settingsService;
+            _apiService = apiService;
+            _boltOptions = boltOptions;
         }
 
         [HttpGet]
@@ -490,7 +496,7 @@ namespace Foundation.Features.Checkout
             AddSubscription(checkoutViewModel);
 
             // billing address
-            UpdatePaymentAddress(checkoutViewModel, errorTypes);
+            UpdatePaymentAddress(checkoutViewModel, errorTypes, CartWithValidationIssues.Cart);
             _orderRepository.Save(CartWithValidationIssues.Cart);
 
             if (!ModelState.IsValid)
@@ -499,7 +505,11 @@ namespace Foundation.Features.Checkout
                 stateValues.AddRange(ModelState.Select(x => new KeyValuePair<string, string>(x.Key, x.Value.Errors.FirstOrDefault().ErrorMessage)));
                 TempData.Set("ModelState", stateValues);
                 TempData.Set("ShipmentBillingTypes", errorTypes);
-                return RedirectToAction("Index");
+                return Redirect(_checkoutService.GetCheckoutUrl(null, !Request.Query.ContainsKey("isGuest") 
+                    ? new Dictionary<string,string>() : new Dictionary<string, string>()
+                    {
+                        { "isGuest", "1" }
+                    }));
             }
 
             try
@@ -508,7 +518,11 @@ namespace Foundation.Features.Checkout
                 if (purchaseOrder == null)
                 {
                     TempData[Constant.ErrorMessages] = "There is no payment was processed";
-                    return RedirectToAction("Index");
+                    return Redirect(_checkoutService.GetCheckoutUrl(null, !Request.Query.ContainsKey("isGuest")
+                    ? new Dictionary<string, string>() : new Dictionary<string, string>()
+                    {
+                        { "isGuest", "1" }
+                    }));
                 }
 
                 if (checkoutViewModel.BillingAddressType == 0)
@@ -547,7 +561,11 @@ namespace Foundation.Features.Checkout
             catch (Exception e)
             {
                 TempData[Constant.ErrorMessages] = e.Message;
-                return RedirectToAction("Index");
+                return Redirect(_checkoutService.GetCheckoutUrl(null, !Request.Query.ContainsKey("isGuest")
+                    ? new Dictionary<string, string>() : new Dictionary<string, string>()
+                    {
+                        { "isGuest", "1" }
+                    }));
             }
         }
 
@@ -626,10 +644,30 @@ namespace Foundation.Features.Checkout
             return PartialView("_AddPayment", model);
         }
 
-        public void UpdatePaymentAddress(CheckoutViewModel viewModel, List<KeyValuePair<string, int>> errorTypes)
+        [HttpGet]
+        public async Task<IActionResult> GetBoltCards([FromQuery] string code, [FromQuery] string scope)
+        {
+            var token = await _apiService.GetTokenAsync(code, scope);
+            if (token == null)
+            {
+                return new JsonResult(null);
+            }
+
+            var account = await _apiService.GetAccountAsync(token.AccessToken);
+            if (account == null)
+            {
+                return new JsonResult(null);
+            }
+
+            account.Token = token.AccessToken;
+            return new JsonResult(account);
+        }
+
+        public void UpdatePaymentAddress(CheckoutViewModel viewModel, List<KeyValuePair<string, int>> errorTypes, ICart cart)
         {
             var orderSummary = _orderSummaryViewModelFactory.CreateOrderSummaryViewModel(CartWithValidationIssues.Cart);
             var isMissingPayment = !CartWithValidationIssues.Cart.Forms.SelectMany(x => x.Payments).Any();
+                        
             if (isMissingPayment || orderSummary.PaymentTotal != 0)
             {
                 if (viewModel.BillingAddressType == 1)
@@ -666,7 +704,7 @@ namespace Foundation.Features.Checkout
             else if (viewModel.BillingAddressType == 2)
             {
                 viewModel.BillingAddress = viewModel.Shipments.FirstOrDefault()?.Address;
-                if (viewModel.BillingAddress == null)
+                if (viewModel.Shipments.FirstOrDefault() == null)
                 {
                     ModelState.AddModelError("BillingAddress.AddressId", "Shipping address is required.");
                     return;
@@ -682,6 +720,13 @@ namespace Foundation.Features.Checkout
                 {
                     errorTypes.Add(new KeyValuePair<string, int>("Billing", 1));
                 }
+            }
+
+            var boltPayment = cart.GetFirstForm().Payments.FirstOrDefault(x => (x.BillingAddress?.Id ?? "").Equals("BoltAddress"));
+            if (boltPayment != null && !boltPayment.BillingAddress.DaytimePhoneNumber.IsNullOrEmpty() && !boltPayment.BillingAddress.Email.IsNullOrEmpty())
+            {
+                viewModel.BillingAddress.DaytimePhoneNumber = boltPayment.BillingAddress.DaytimePhoneNumber;
+                viewModel.BillingAddress.Email = boltPayment.BillingAddress.Email;
             }
 
             foreach (var payment in CartWithValidationIssues.Cart.GetFirstForm().Payments)

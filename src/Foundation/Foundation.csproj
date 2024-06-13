@@ -32,6 +32,7 @@
     <!-- Optimizely Search & Navigation -->
     <PackageReference Include="EPiServer.Find.Cms" Version="16.2.0" />
     <PackageReference Include="EPiServer.Find.Commerce" Version="12.2.0" />
+    <PackageReference Include="Optimizely.ContentGraph.Cms" Version="3.9.0-pre-84801" />
     <PackageReference Include="PowerSlice" Version="5.2.0" />
 
     <!-- Productivity enhancements, Tools, Other Add-ons -->

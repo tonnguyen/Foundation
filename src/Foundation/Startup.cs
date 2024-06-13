@@ -9,6 +9,7 @@ using EPiServer.ContentApi.Commerce;
 using EPiServer.ContentDefinitionsApi;
 using EPiServer.ContentManagementApi;
 using EPiServer.Data;
+using EPiServer.DependencyInjection;
 using EPiServer.Labs.ContentManager;
 using EPiServer.Marketing.Testing.Web.Initializers;
 using EPiServer.OpenIDConnect;
@@ -32,6 +33,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
+using Optimizely.ContentGraph.Cms.Services.Internal;
 using Optimizely.Labs.MarketingAutomationIntegration.ODP;
 using System.IO;
 using UNRVLD.ODP.VisitorGroups.Initilization;
@@ -249,6 +251,16 @@ namespace Foundation
             services.AddGroupingHeader();
             // Bulk Edit add-on
             services.AddBulkEdit();
+
+            
+
+            services.AddContentGraph(x =>
+            {
+                x.IncludeInheritanceInContentType = true;
+                x.PreventFieldCollision = true;
+            });
+
+            services.AddSingleton<IIndexTarget, CommerceIndexTarget>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

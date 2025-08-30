@@ -18,23 +18,27 @@ namespace Infrastructure.Commerce.Extensions
         {
             if (context.User.Identity != null && context.User.Identity.IsAuthenticated)
             {
-                var anonymousId = context.Features.Get<IAnonymousIdFeature>().AnonymousId;
-
-                if (!string.IsNullOrWhiteSpace(anonymousId))
+                var anonymousIdFeature = context.Features.Get<IAnonymousIdFeature>();
+                if (anonymousIdFeature != null)
                 {
-                    var orderRepository = ServiceLocator.Current.GetInstance<IOrderRepository>();
-                    var marketService = ServiceLocator.Current.GetInstance<IMarketService>();
+                    var anonymousId = anonymousIdFeature.AnonymousId;
 
-                    var currentMarket = _currentMarket.GetCurrentMarket();
-                    var cart = orderRepository.LoadCart<ICart>(new Guid(anonymousId), DefaultCartName, currentMarket.MarketId);
-
-                    if (cart != null && cart.GetAllLineItems().ToList().Count > 0)
+                    if (!string.IsNullOrWhiteSpace(anonymousId))
                     {
-                        cart.MarketId = currentMarket.MarketId;
-                        orderRepository.Save(cart);
+                        var orderRepository = ServiceLocator.Current.GetInstance<IOrderRepository>();
+                        var marketService = ServiceLocator.Current.GetInstance<IMarketService>();
 
-                        var profileMigrator = ServiceLocator.Current.GetInstance<IProfileMigrator>();
-                        profileMigrator.MigrateCarts(new Guid(anonymousId));
+                        var currentMarket = _currentMarket.GetCurrentMarket();
+                        var cart = orderRepository.LoadCart<ICart>(new Guid(anonymousId), DefaultCartName, currentMarket.MarketId);
+
+                        if (cart != null && cart.GetAllLineItems().ToList().Count > 0)
+                        {
+                            cart.MarketId = currentMarket.MarketId;
+                            orderRepository.Save(cart);
+
+                            var profileMigrator = ServiceLocator.Current.GetInstance<IProfileMigrator>();
+                            profileMigrator.MigrateCarts(new Guid(anonymousId));
+                        }
                     }
                 }
             }
